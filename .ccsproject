@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?ccsproject version="1.0"?>
+<projectOptions>
+	<deviceVariant value="Cortex M.TM4C129XNCZAD"/>
+	<deviceFamily value="TMS470"/>
+	<deviceEndianness value="little"/>
+	<codegenToolVersion value="GNU_4.8.4:Linaro"/>
+	<isElfFormat value="true"/>
+	<linkerCommandFile value="TM4C129XNCZAD.lds"/>
+	<rts value=""/>
+	<createSlaveProjects value=""/>
+	<origin value="C:\ti\tirtos_tivac_2_12_01_33\resources\kernelExamples\gnuTargetExamples\com_ti_rtsc_tirtostivac_example_188.projectspec"/>
+	<templateProperties value="id=com_ti_rtsc_tirtostivac_example_188.projectspec.minimal_TivaTM4C129XNCZAD,type=rtsc,products=com.ti.rtsc.TIRTOStivac,target=gnu.targets.arm.M4F,platform=ti.platforms.tiva:$DeviceId$,buildProfile=release,isHybrid=true,"/>
+	<connection value="common/targetdb/connections/Stellaris_ICDI_Connection.xml"/>
+	<isTargetManual value="false"/>
+</projectOptions>
