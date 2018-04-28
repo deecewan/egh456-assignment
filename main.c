@@ -3,9 +3,13 @@
  */
 
 #include <xdc/std.h>
+
 #include <xdc/runtime/System.h>
+
 #include <ti/sysbios/BIOS.h>
+
 #include <ti/sysbios/knl/Task.h>
+
 #include "drivers/rom.h"
 
 /*

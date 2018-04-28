@@ -102,12 +102,11 @@
 								<option id="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.PLATFORM_RAW.1474519086" name="Platform (-p)" superClass="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.PLATFORM_RAW" value="ti.platforms.tiva:$DeviceId$" valueType="string"/>
 								<option id="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.BUILD_PROFILE.90662936" name="Build-profile (-r)" superClass="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.BUILD_PROFILE" value="release" valueType="string"/>
 								<option id="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.CODEGEN_TOOL_DIR.1335119482" name="Compiler tools directory (-c)" superClass="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.CODEGEN_TOOL_DIR" value="&quot;${CG_TOOL_ROOT}&quot;" valueType="string"/>
-								<option id="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.BUILD_CONFIGURATION_FILE.135331721" superClass="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.BUILD_CONFIGURATION_FILE" useByScannerDiscovery="false" value="${PROJECT_ROOT}/utils/Debug/configPkg/config.bld" valueType="string"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="app.cfg|utils/uartstdio.c|utils/tftp.c|utils/swupdate.c|utils/spi_flash.c|utils/speexlib.c|utils/softuart.c|utils/softssi.c|utils/softi2c.c|utils/smbus.c|utils/sine.c|utils/scheduler.c|utils/ringbuf.c|utils/random.c|utils/ptpdlib.c|utils/lwiplib.c|utils/locator.c|utils/isqrt.c|utils/fswrapper.c|utils/flash_pb.c|utils/cpu_usage.c|utils/cmdline.c|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="utils/uartstdio.c|utils/tftp.c|utils/swupdate.c|utils/spi_flash.c|utils/speexlib.c|utils/softuart.c|utils/softssi.c|utils/softi2c.c|utils/smbus.c|utils/sine.c|utils/scheduler.c|utils/ringbuf.c|utils/random.c|utils/ptpdlib.c|utils/lwiplib.c|utils/locator.c|utils/isqrt.c|utils/fswrapper.c|utils/flash_pb.c|utils/cpu_usage.c|utils/cmdline.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -198,12 +197,11 @@
 									<listOptionValue builtIn="false" value="${COM_TI_RTSC_TIRTOSTIVAC_REPOS}"/>
 									<listOptionValue builtIn="false" value="${TARGET_CONTENT_BASE}"/>
 								</option>
-								<option id="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.BUILD_CONFIGURATION_FILE.252838163" superClass="com.ti.rtsc.buildDefinitions.XDC_3.16.tool.BUILD_CONFIGURATION_FILE" useByScannerDiscovery="false" value="${PROJECT_ROOT}/utils/Debug/configPkg/config.bld" valueType="string"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="app.cfg|src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
