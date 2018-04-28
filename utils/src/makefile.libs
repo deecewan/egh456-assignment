@@ -1,6 +1,6 @@
 #
 # This file was generated based on the configuration script:
-#     /Users/david/Downloads/ProjectTemplate_RTOS/app.cfg
+#     /Users/david/projects/deecewan/egh456-assignment/utils/app.cfg
 #
 # This makefile may be included in other makefiles that need to build
 # the libraries containing the compiled source files generated as
@@ -14,9 +14,9 @@
 #
 # The absolute path to the generated source directory (at the time the
 # sources were generated) is:
-#    /Users/david/Downloads/ProjectTemplate_RTOS/src
+#    /Users/david/projects/deecewan/egh456-assignment/utils/src
 #
-GEN_SRC_DIR ?= ../src
+GEN_SRC_DIR ?= ../utils/src
 
 ifeq (,$(wildcard $(GEN_SRC_DIR)))
 $(error "ERROR: GEN_SRC_DIR must be set to the directory containing the generated sources")
