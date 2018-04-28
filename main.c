@@ -1,8 +1,3 @@
-/*
- *  ======== main.c ========
- */
-// we define this so that the ROM_ functions become available
-#define TARGET_IS_TM4C129_RA0
 #include <stdbool.h>
 #include <stdint.h>
 #include <driverlib/rom.h>
@@ -31,7 +26,6 @@ Int main()
                                            SYSCTL_CFG_VCO_480), 120000000);
     // Configure the device pins
     PinoutSet();
-
 
     ui_setup(ui32SysClock);
 
