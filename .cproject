@@ -49,6 +49,7 @@
 									<listOptionValue builtIn="false" value="-c"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.compilerID.DEFINE.1741557429" name="Define symbols (-D)" superClass="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.compilerID.DEFINE" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="TARGET_IS_TM4C129_RA0"/>
 									<listOptionValue builtIn="false" value="${COM_TI_RTSC_TIRTOSTIVAC_SYMBOLS}"/>
 									<listOptionValue builtIn="false" value="PART_TM4C129XNCZAD"/>
 								</option>
@@ -87,6 +88,7 @@
 									<listOptionValue builtIn="false" value="&quot;${COM_TI_RTSC_TIRTOSTIVAC__TIVAWARE_C_SERIES}/grlib/gcc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${COM_TI_RTSC_TIRTOSTIVAC__TIVAWARE_C_SERIES}/driverlib/gcc&quot;"/>
 								</option>
+								<option id="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.linkerID.DEFSYM.807994060" name="Define a symbol (--defsym)" superClass="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.linkerID.DEFSYM" valueType="stringList"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.exeLinker.inputType__CMD_SRCS.2116403905" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.exeLinker.inputType__CMD_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.exeLinker.inputType__CMD2_SRCS.1185809785" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.exeLinker.inputType__CMD2_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.exeLinker.inputType__GEN_CMDS.134369647" name="Generated Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.TMS470_GNU_4.0.exeLinker.inputType__GEN_CMDS"/>
@@ -106,7 +108,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="utils/uartstdio.c|utils/tftp.c|utils/swupdate.c|utils/spi_flash.c|utils/speexlib.c|utils/softuart.c|utils/softssi.c|utils/softi2c.c|utils/smbus.c|utils/sine.c|utils/scheduler.c|utils/ringbuf.c|utils/random.c|utils/ptpdlib.c|utils/lwiplib.c|utils/locator.c|utils/isqrt.c|utils/fswrapper.c|utils/flash_pb.c|utils/cpu_usage.c|utils/cmdline.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src|utils/uartstdio.c|utils/tftp.c|utils/swupdate.c|utils/spi_flash.c|utils/speexlib.c|utils/softuart.c|utils/softssi.c|utils/softi2c.c|utils/smbus.c|utils/sine.c|utils/scheduler.c|utils/ringbuf.c|utils/random.c|utils/ptpdlib.c|utils/lwiplib.c|utils/locator.c|utils/isqrt.c|utils/fswrapper.c|utils/flash_pb.c|utils/cpu_usage.c|utils/cmdline.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -201,7 +203,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
