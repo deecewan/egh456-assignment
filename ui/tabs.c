@@ -67,7 +67,7 @@ void select_settings_panel() {
 /* ========= TAB BUTTONS =========== */
 RectangularButton(btnStats, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                   PANEL_X_VALUE, SCREEN_HEIGHT - TAB_HEIGHT - MARGIN_BOTTOM, TAB_WIDTH, TAB_HEIGHT,
-                  PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrBlue, ClrAliceBlue, 0, ClrWhite,
+                  PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrBlue, ClrAqua, 0, ClrWhite,
                   g_psFontCm20, "Stats", 0, 0, 0, 0, select_stats_panel);
 // this one is initially selected
 RectangularButton(btnHome, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
@@ -77,19 +77,19 @@ RectangularButton(btnHome, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
 
 RectangularButton(btnSettings, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                   PANEL_X_VALUE + (TAB_WIDTH * 2), SCREEN_HEIGHT - TAB_HEIGHT - MARGIN_BOTTOM, TAB_WIDTH, TAB_HEIGHT,
-                  PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrBlue, ClrAliceBlue, 0, ClrWhite,
+                  PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrBlue, ClrAqua, 0, ClrWhite,
                   g_psFontCm20, "Settings", 0, 0, 0, 0, select_settings_panel);
 
 void redraw_tab_buttons() {
     // background color onto the selected one
     PushButtonFillColorSet(&btnStats, selected_panel == STATS ? ClrGray : ClrBlue);
-    PushButtonFillColorPressedSet(&btnStats, selected_panel == STATS ? ClrGray : ClrAliceBlue);
+    PushButtonFillColorPressedSet(&btnStats, selected_panel == STATS ? ClrGray : ClrAqua);
 
     PushButtonFillColorSet(&btnHome, selected_panel == HOME ? ClrGray : ClrBlue);
-    PushButtonFillColorPressedSet(&btnHome, selected_panel == HOME ? ClrGray : ClrAliceBlue);
+    PushButtonFillColorPressedSet(&btnHome, selected_panel == HOME ? ClrGray : ClrAqua);
 
     PushButtonFillColorSet(&btnSettings, selected_panel == SETTINGS ? ClrGray : ClrBlue);
-    PushButtonFillColorPressedSet(&btnSettings, selected_panel == SETTINGS ? ClrGray : ClrAliceBlue);
+    PushButtonFillColorPressedSet(&btnSettings, selected_panel == SETTINGS ? ClrGray : ClrAqua);
 
     WidgetPaint((tWidget *)&btnStats);
     WidgetPaint((tWidget *)&btnHome);
