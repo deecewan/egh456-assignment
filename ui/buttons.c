@@ -4,7 +4,7 @@
 #include <grlib/widget.h>
 #include <grlib/pushbutton.h>
 #include "drivers/kentec320x240x16_ssd2119.h"
-#include "constants.h"
+#include "./constants.h"
 #include "state.h"
 
 #define SCREEN_WIDTH 320

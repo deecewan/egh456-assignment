@@ -8,8 +8,8 @@
 #include "drivers/kentec320x240x16_ssd2119.h"
 #include "drivers/frame.h"
 #include "drivers/touch.h"
-#include "constants.h"
-#include "buttons.h"
+#include "../constants.h"
+#include "tabs.h"
 
 #define TASKSTACKSIZE   512
 
@@ -41,7 +41,7 @@ void ui_setup(uint32_t sysclock) {
   FrameDraw(&g_sContext, "Group 10 Motor Controller");
 
   // Perform all setup functionality **here**
-  setup_buttons(); // buttons are setup now
+  setup_tabs(); // buttons are setup now
 
   // perform the first paint of the widgets
   WidgetPaint(WIDGET_ROOT);
