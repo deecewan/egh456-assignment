@@ -23,9 +23,6 @@ Void taskRedrawLoop(UArg arg0, UArg arg1) {
   while (1) {
     // process anything pending
     WidgetMessageQueueProcess();
-
-    // perform all redraws
-    redraw_buttons();
   }
 }
 
