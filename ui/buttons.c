@@ -7,72 +7,44 @@
 #include "constants.h"
 #include "state.h"
 
-bool SHOULD_REPAINT = 1;
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
+#define BUTTON_WIDTH 200
+#define BUTTON_HEIGHT 100
 
-tPushButtonWidget btnStart, btnStop;
-const char* textStart = "Start";
-const char* textStarting = "Starting";
-const char* textStop = "Stop";
-const char* textStopping = "Stopping";
+void onPress(tWidget *psWidget);
 
-void onStartPress(tWidget *psWidget) {
-    if (get_motor_state() == OFF) {
-        set_motor_state(ON);
-        SHOULD_REPAINT = true;
-    }
-}
+RectangularButton(btnToggleMotor, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
+                  (SCREEN_WIDTH - BUTTON_WIDTH) / 2, (SCREEN_HEIGHT - BUTTON_HEIGHT) / 2, BUTTON_WIDTH, BUTTON_HEIGHT,
+                  PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrGreenYellow, ClrGreen, 0, ClrWhite,
+                  g_psFontCm20, "Start", 0, 0, 0, 0, onPress);
 
-void onStopPress(tWidget *psWidget) {
-    if (get_motor_state() == ON) {
-        set_motor_state(OFF);
-        SHOULD_REPAINT = true;
-    }
-}
 
-tPushButtonWidget create_start_stop_button(
-        const char *text,
-        uint32_t x,
-        bool enabled,
-        uint32_t fill,
-        uint32_t press_fill,
-        void (*cb)(tWidget *psWidget)
-) {
-    tPushButtonWidget _some_button = RectangularButtonStruct(
-                0, 0, 0, // no parent, children or next
-                /* display */&g_sKentec320x240x16_SSD2119,
-                /* x */x, /* y */ 100, /* width */ 100, /* height */ 100,
-                /* style */PB_STYLE_TEXT | PB_STYLE_FILL,
-                // if we can press is, make it green, otherwise grey
-                /* fill */ enabled ? fill: ClrGray,
-                // if we can press it, highlight when pressed. otherwise, leave
-                /* onPress fill */ enabled ? press_fill : ClrGray,
-                /* outline color */0, /* text color */ClrWhite,
-                /* font */ g_psFontCm20, /* text */text,
-                0, 0, 0, 0,
-                /* callback */cb
-                );
-    return _some_button;
-}
-
-void create_buttons() {
+void onPress(tWidget *psWidget) {
+    toggle_motor_state();
     MOTOR_STATE state = get_motor_state();
+    uint32_t fill, press_fill;
+    char *text;
 
-    btnStart = create_start_stop_button(textStart, 200, state == OFF, ClrGreenYellow, ClrHoneydew, onStartPress);
-    btnStop = create_start_stop_button(textStop, 20, state == ON, ClrRed, ClrLightSalmon, onStopPress);
-}
-
-void redraw_buttons() {
-    if (SHOULD_REPAINT) {
-        SHOULD_REPAINT = false;
-        create_buttons();
-        WidgetPaint((tWidget *)&btnStart);
-        WidgetPaint((tWidget *)&btnStop);
+    switch (state) {
+    case ON:
+        fill = ClrRed;
+        press_fill = ClrLightSalmon;
+        text = "Stop";
+        break;
+    case OFF:
+        fill = ClrGreenYellow;
+        press_fill = ClrGreen;
+        text = "Start";
+        break;
     }
-}
 
+    PushButtonFillColorSet(&btnToggleMotor, fill);
+    PushButtonFillColorPressedSet(&btnToggleMotor, press_fill);
+    PushButtonTextSet(&btnToggleMotor, text);
+    WidgetPaint((tWidget *)&btnToggleMotor);
+}
 
 void setup_buttons() {
-    create_buttons();
-    WidgetAdd(WIDGET_ROOT, (tWidget *)&btnStart);
-    WidgetAdd(WIDGET_ROOT, (tWidget *)&btnStop);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&btnToggleMotor);
 }
