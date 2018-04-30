@@ -1,6 +1,6 @@
 #include "constants.h"
 
-MOTOR_STATE motor_state = OFF;
+volatile MOTOR_STATE motor_state = OFF;
 
 MOTOR_STATE get_motor_state() {
   return motor_state;
