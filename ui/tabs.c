@@ -102,6 +102,6 @@ void setup_tabs() {
     WidgetAdd(WIDGET_ROOT, (tWidget *)&btnHome);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&btnSettings);
 
-//    // Add the first panel
+    // Add the first panel - home panel
     WidgetAdd(WIDGET_ROOT, (tWidget *)(panels + selected_panel));
 }

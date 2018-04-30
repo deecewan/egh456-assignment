@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <driverlib/gpio.h>
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
 #include <xdc/std.h>
@@ -7,6 +8,7 @@
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
 #include <ti/catalog/arm/cortexm4/tiva/ce/sysctl.h>
+#include <inc/hw_memmap.h>
 #include "drivers/pinout.h"
 #include "ui/main.h"
 
@@ -26,6 +28,12 @@ Int main()
                                            SYSCTL_CFG_VCO_480), 120000000);
     // Configure the device pins
     PinoutSet();
+
+    // enable the LED pins to display motor status
+    // red pin
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_5);
+    // green pin
+    ROM_GPIOPinTypeGPIOOutput(GPIO_PORTQ_BASE, GPIO_PIN_7);
 
     ui_setup(ui32SysClock);
 

@@ -2,13 +2,16 @@
 #include <stdbool.h>
 #include <grlib/grlib.h>
 #include <grlib/widget.h>
+#include <driverlib/gpio.h>
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
+#include <inc/hw_memmap.h>
 #include <ti/sysbios/knl/Task.h>
 #include "drivers/kentec320x240x16_ssd2119.h"
 #include "drivers/frame.h"
 #include "drivers/touch.h"
 #include "../constants.h"
+#include "../state.h"
 #include "tabs.h"
 
 #define TASKSTACKSIZE   512
@@ -21,6 +24,17 @@ Task_Struct taskRedrawLoopStruct;
 
 Void taskRedrawLoop(UArg arg0, UArg arg1) {
   while (1) {
+      MOTOR_STATE state = get_motor_state();
+      switch (state) {
+          case ON:
+            ROM_GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_5, 0x0);
+            ROM_GPIOPinWrite(GPIO_PORTQ_BASE, GPIO_PIN_7, GPIO_PIN_7);
+            break;
+          case OFF:
+            ROM_GPIOPinWrite(GPIO_PORTQ_BASE, GPIO_PIN_7, 0x0);
+            ROM_GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_5, GPIO_PIN_5);
+            break;
+        }
     // process anything pending
     WidgetMessageQueueProcess();
   }
