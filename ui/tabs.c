@@ -11,9 +11,10 @@
 #include "tabs/home.h"
 #include "tabs/settings.h"
 #include "tabs.h"
+#include "main.h"
 
 extern tCanvasWidget panels[];
-volatile PANEL selected_panel = HOME;
+volatile PANEL selected_panel = SETTINGS;
 
 void redraw_tab_buttons();
 
@@ -68,17 +69,17 @@ void select_settings_panel() {
 RectangularButton(btnStats, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                   PANEL_X_VALUE, SCREEN_HEIGHT - TAB_HEIGHT - MARGIN_BOTTOM, TAB_WIDTH, TAB_HEIGHT,
                   PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrBlue, ClrAqua, 0, ClrWhite,
-                  g_psFontCm20, "Stats", 0, 0, 0, 0, select_stats_panel);
+                  g_psFontCmss20, "Stats", 0, 0, 0, 0, select_stats_panel);
 // this one is initially selected
 RectangularButton(btnHome, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                   PANEL_X_VALUE + TAB_WIDTH, SCREEN_HEIGHT - TAB_HEIGHT - MARGIN_BOTTOM, TAB_WIDTH, TAB_HEIGHT,
-                  PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrGray, ClrGray, 0, ClrWhite,
-                  g_psFontCm20, "Home", 0, 0, 0, 0, select_home_panel);
+                  PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrBlue, ClrAqua, 0, ClrWhite,
+                  g_psFontCmss20, "Home", 0, 0, 0, 0, select_home_panel);
 
 RectangularButton(btnSettings, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                   PANEL_X_VALUE + (TAB_WIDTH * 2), SCREEN_HEIGHT - TAB_HEIGHT - MARGIN_BOTTOM, TAB_WIDTH, TAB_HEIGHT,
                   PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrBlue, ClrAqua, 0, ClrWhite,
-                  g_psFontCm20, "Settings", 0, 0, 0, 0, select_settings_panel);
+                  g_psFontCmss20, "Settings", 0, 0, 0, 0, select_settings_panel);
 
 void redraw_tab_buttons() {
     // background color onto the selected one
@@ -101,7 +102,48 @@ void setup_tabs() {
     WidgetAdd(WIDGET_ROOT, (tWidget *)&btnStats);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&btnHome);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&btnSettings);
+    redraw_tab_buttons();
 
     // Add the first panel - home panel
+    WidgetAdd(WIDGET_ROOT, (tWidget *)(panels + selected_panel));
+}
+
+void tabs_onStateChange() {
+    switch (selected_panel) {
+        case HOME:
+            home_onStateChange();
+            break;
+        case SETTINGS:
+        case STATS:
+            break;
+    }
+}
+
+void update_runtime_display() {
+    if (selected_panel == HOME) {
+        home_updateRuntime();
+    }
+}
+
+// this is a cheeky way to clear the whole screen
+void wipe_panel_area() {
+    static const tRectangle sRect =
+    {
+        PANEL_X_VALUE,
+        PANEL_Y_VALUE,
+        PANEL_WIDTH,
+        PANEL_HEIGHT,
+    };
+
+    GrRectFill(&g_sContext, &sRect);
+}
+
+void hide_current_panel() {
+    WidgetRemove((tWidget *)(panels + selected_panel));
+    wipe_panel_area();
+}
+
+void show_current_panel() {
+    wipe_panel_area();
     WidgetAdd(WIDGET_ROOT, (tWidget *)(panels + selected_panel));
 }

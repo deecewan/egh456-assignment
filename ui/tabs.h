@@ -4,6 +4,11 @@
 
 void setup_tabs();
 void select_tab(uint32_t idx);
+void tabs_onStateChange();
+void update_runtime_display();
+
+void hide_current_panel();
+void show_current_panel();
 
 #define MARGIN_TOP 24
 #define MARGIN_LEFT 8
