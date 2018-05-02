@@ -4,17 +4,29 @@
 /**
  * Controls whether on not the motor is turned on
  */
-volatile MOTOR_STATE motor_state = OFF;
+volatile MOTOR_POWER motor_power = OFF;
+MOTOR_POWER get_motor_power() {
+  return motor_power;
+}
+
+void set_motor_power(MOTOR_POWER power) {
+   motor_power = power;
+}
+
+void toggle_motor_power() {
+    motor_power ^= ON;
+}
+
+/**
+ * Tracks the state of the motor at any given point in time
+ */
+volatile MOTOR_STATE motor_state = IDLE;
 MOTOR_STATE get_motor_state() {
-  return motor_state;
+    return motor_state;
 }
 
 void set_motor_state(MOTOR_STATE state) {
-  motor_state = state;
-}
-
-void toggle_motor_state() {
-  motor_state ^= ON;
+    motor_state = state;
 }
 
 /**
@@ -57,4 +69,21 @@ uint32_t get_temp_limit() {
 
 void set_temp_limit(uint32_t limit) {
   temp_limit = limit;
+}
+
+/**
+ * Keeps track of how long the program has been running
+ */
+static volatile uint32_t run_time;
+
+uint32_t get_run_time() {
+    return run_time;
+}
+
+void reset_run_time() {
+    run_time = 0;
+}
+
+void increment_run_time() {
+    run_time++;
 }
