@@ -130,8 +130,9 @@ void showKeyboard(tWidget *psWidget) {
     // remove the parent, but keep a reference
     hide_current_panel();
     WidgetAdd(WIDGET_ROOT, (tWidget *)&g_sKeyboardBackground);
+    wipe_panel_area();
+    GrContextFontSet(&g_sContext, g_psFontCmss24);
     WidgetPaint((tWidget *)&g_sKeyboardBackground);
-    WidgetPaint((tWidget *)&g_sKeyboard);
 }
 
 void setInputAndShowKeyboard(tWidget *psWidget, INPUT_FIELDS field) {
@@ -155,29 +156,28 @@ void showTempLimitKeyboard(tWidget *psWidget) {
 
 // this is just a wee lil' dummy to handle the canvas click
 RectangularButton(buttonMotorSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-                      (320 + 10) / 2, 30, (320 - 20) / 2, 30,
-                      PB_STYLE_RELEASE_NOTIFY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, showMotorSpeedKeyboard);
+    (SCREEN_WIDTH + MARGIN_LEFT) / 2, 30, (320 - 25) / 2, 30,
+    PB_STYLE_RELEASE_NOTIFY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, showMotorSpeedKeyboard);
 Canvas(inputMotorSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-       (320 + 10) / 2, 30, (320 - 22) / 2, 30,
-       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
-       ClrBlack, ClrBlue, ClrWhite, g_psFontCmss20, motorSpeed, 0, 0);
+    (SCREEN_WIDTH + MARGIN_LEFT) / 2, 30, (320 - 25) / 2, 30,
+    CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+    ClrBlack, ClrBlue, ClrWhite, g_psFontCmss20, motorSpeed, 0, 0);
 RectangularButton(buttonCurrentLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-                      (320 + 10) / 2, 60, (320 - 20) / 2, 30,
-                      PB_STYLE_RELEASE_NOTIFY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, showCurrentLimitKeyboard);
+    (SCREEN_WIDTH + MARGIN_LEFT) / 2, 60, (320 - 25) / 2, 30,
+    PB_STYLE_RELEASE_NOTIFY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, showCurrentLimitKeyboard);
 Canvas(inputCurrentLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-       (320 + 10) / 2, 60, (320 - 20) / 2, 30,
-       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
-       ClrBlack, ClrBlue, ClrWhite, g_psFontCmss20, currentLimit, 0, 0);
+    (SCREEN_WIDTH + MARGIN_LEFT) / 2, 60, (320 - 25) / 2, 30,
+    CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+    ClrBlack, ClrBlue, ClrWhite, g_psFontCmss20, currentLimit, 0, 0);
 RectangularButton(buttonTempLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-                      (320 + 10) / 2, 90, (320 - 20) / 2, 30,
-                      PB_STYLE_RELEASE_NOTIFY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, showTempLimitKeyboard);
+    (SCREEN_WIDTH + MARGIN_LEFT) / 2, 90, (320 - 25) / 2, 30,
+    PB_STYLE_RELEASE_NOTIFY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, showTempLimitKeyboard);
 Canvas(inputTempLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-       (320 + 10) / 2, 90, (320 - 20) / 2, 30,
-       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
-       ClrBlack, ClrBlue, ClrWhite, g_psFontCmss20, tempLimit, 0, 0);
+    (SCREEN_WIDTH + MARGIN_LEFT) / 2, 90, (320 - 25) / 2, 30,
+    CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+    ClrBlack, ClrBlue, ClrWhite, g_psFontCmss20, tempLimit, 0, 0);
 
 void paint_settings(tWidget *psWidget, tContext *psContext) {
-    System_printf("Painting Settings");
     GrContextFontSet(psContext, g_psFontCmss20);
     GrContextForegroundSet(psContext, ClrWhite);
     GrStringDraw(psContext, "Motor Speed", -1,

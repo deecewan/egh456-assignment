@@ -7,6 +7,7 @@ void select_tab(uint32_t idx);
 void tabs_onStateChange();
 void update_runtime_display();
 
+void wipe_panel_area();
 void hide_current_panel();
 void show_current_panel();
 

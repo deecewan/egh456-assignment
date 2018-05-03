@@ -143,7 +143,6 @@ void hide_current_panel() {
     WidgetRemove((tWidget *)&btnStats);
     WidgetRemove((tWidget *)&btnHome);
     WidgetRemove((tWidget *)&btnSettings);
-    wipe_panel_area();
 }
 
 void show_current_panel() {
