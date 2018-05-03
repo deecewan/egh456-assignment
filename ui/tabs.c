@@ -129,21 +129,25 @@ void update_runtime_display() {
 void wipe_panel_area() {
     static const tRectangle sRect =
     {
-        PANEL_X_VALUE,
-        PANEL_Y_VALUE,
-        PANEL_WIDTH,
-        PANEL_HEIGHT,
+        MARGIN_LEFT,
+        MARGIN_TOP,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
     };
-
+    GrContextForegroundSet(&g_sContext, ClrBlack);
     GrRectFill(&g_sContext, &sRect);
 }
 
 void hide_current_panel() {
     WidgetRemove((tWidget *)(panels + selected_panel));
+    WidgetRemove((tWidget *)&btnStats);
+    WidgetRemove((tWidget *)&btnHome);
+    WidgetRemove((tWidget *)&btnSettings);
     wipe_panel_area();
 }
 
 void show_current_panel() {
     wipe_panel_area();
-    WidgetAdd(WIDGET_ROOT, (tWidget *)(panels + selected_panel));
+    setup_tabs();
+    WidgetPaint((tWidget *)(panels + selected_panel));
 }
