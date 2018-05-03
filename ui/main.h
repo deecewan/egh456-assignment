@@ -4,6 +4,8 @@
 
 void ui_setup();
 
+void idleTask();
+
 // Global graphics context;
 tContext g_sContext;
 void make_background_color(uint32_t color);

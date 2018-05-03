@@ -48,8 +48,8 @@ void select_panel(PANEL panel) {
     }
     WidgetRemove((tWidget *)(panels + selected_panel));
     selected_panel = panel;
-    WidgetAdd(WIDGET_ROOT, (tWidget *)(panels + selected_panel));
     WidgetPaint((tWidget *)(panels + selected_panel));
+    WidgetAdd(WIDGET_ROOT, (tWidget *)(panels + selected_panel));
     redraw_tab_buttons();
 }
 
