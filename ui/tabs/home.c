@@ -23,27 +23,54 @@ RectangularButton(btnToggleMotor, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
 
 Canvas(boxStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  10, 100, 20, 20,
-                 CANVAS_STYLE_FILL, COLOR_IDLE, 0, 0, 0, 0, 0, 0);
+                 CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE, COLOR_IDLE, ClrGreen, 0, 0, 0, 0, 0);
 Canvas(textStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  40, 100, 75, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT,
-                 ClrBlack, 0, ClrWhite, g_psFontCmss20, "Idle", 0, 0);
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_OUTLINE,
+                 ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, "Idle", 0, 0);
 Canvas(textRuntime, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  10, 140, 105, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
-                 ClrBlack, 0, ClrWhite, g_psFontCmss20, "Time: ", 0, 0);
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, "Time: ", 0, 0);
 char runtime[20] = "0s";
 Canvas(textRuntimeValue, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  60, 140, 105, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
-                 ClrBlack, 0, ClrWhite, g_psFontCmss20, runtime, 0, 0);
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, runtime, 0, 0);
+static char motorSpeed[22] = "Motor Speed: 0 rpm"; // allows up to 5 digits
+Canvas(textMotorSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
+                 160, 100, 150, 20,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, motorSpeed, 0, 0);
+static char currentLimit[24] = "Current Limit: 0 mA"; // allows up to 5 digits
+Canvas(textCurrentLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
+                 160, 130, 150, 20,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, currentLimit, 0, 0);
+static char tempLimit[16] = "Temp Limit: 0 C"; // allows up to 3 digits
+Canvas(textTempLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
+                 160, 160, 150, 20,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, tempLimit, 0, 0);
 
 void paint_home(tWidget *psWidget, tContext *psContext) {
     WidgetAdd(psWidget, (tWidget *)&btnToggleMotor);
+
     WidgetAdd(psWidget, (tWidget *)&boxStateIndicator);
     WidgetAdd(psWidget, (tWidget *)&textStateIndicator);
+
     WidgetAdd(psWidget, (tWidget *)&textRuntime);
     WidgetAdd(psWidget, (tWidget *)&textRuntimeValue);
+
+    usprintf(motorSpeed, "Motor Speed: %d rpm", get_motor_speed());
+    usprintf(currentLimit, "Current Limit: %d mA", get_current_limit());
+    usprintf(tempLimit, "Temp Limit: %d C", get_temp_limit());
+
+    WidgetAdd(psWidget, (tWidget *)&textMotorSpeed);
+    WidgetAdd(psWidget, (tWidget *)&textCurrentLimit);
+    WidgetAdd(psWidget, (tWidget *)&textTempLimit);
+
+
     updateStateIndicator();
     update_runtime_display();
 }
@@ -120,6 +147,6 @@ void home_updateRuntime() {
     } else {
         usprintf(runtime, "%us", seconds);
     }
-    CanvasTextSet(&textRuntimeValue, runtime);
+//    CanvasTextSet(&textRuntimeValue, runtime);
     WidgetPaint((tWidget *)&textRuntimeValue);
 }

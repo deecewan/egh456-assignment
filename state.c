@@ -74,7 +74,7 @@ void set_temp_limit(uint32_t limit) {
 /**
  * Keeps track of how long the program has been running
  */
-static volatile uint32_t run_time;
+static volatile uint32_t run_time = 0;
 
 uint32_t get_run_time() {
     return run_time;
