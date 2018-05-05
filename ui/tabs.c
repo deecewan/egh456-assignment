@@ -14,7 +14,7 @@
 #include "main.h"
 
 extern tCanvasWidget panels[];
-volatile PANEL selected_panel = SETTINGS;
+volatile PANEL selected_panel = STATS;
 
 void redraw_tab_buttons();
 
@@ -148,5 +148,9 @@ void hide_current_panel() {
 void show_current_panel() {
     wipe_panel_area();
     setup_tabs();
+    WidgetPaint((tWidget *)(panels + selected_panel));
+}
+
+void redraw_current_panel() {
     WidgetPaint((tWidget *)(panels + selected_panel));
 }
