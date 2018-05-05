@@ -9,5 +9,9 @@ typedef enum VISIBILITY {
     LINE_TEMP = 0b100,
 } VISIBILITY;
 
+#define CIRCLE_RADIUS 2
+#define LINE_Y_VALUE(i) (13 + ((i) * 15))
+
 void paint_stats(tWidget *psWidget, tContext *psContext);
+void stats_redrawGraphs();
 #endif // UI_TABS_STATS_H

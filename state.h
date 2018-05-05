@@ -21,4 +21,20 @@ void set_temp_limit(uint32_t limit);
 
 uint32_t get_run_time();
 void increment_run_time();
+
+// used to define a linked list of values
+typedef struct ListItem {
+    uint32_t value;
+    struct ListItem* next;
+} ListItem;
+
+#define LIST_ITEM_COUNT 20
+
+uint32_t *get_motor_speed_list();
+uint32_t *get_current_list();
+uint32_t *get_temp_list();
+
+uint32_t get_largest_motor_speed();
+uint32_t get_largest_current();
+uint32_t get_largest_temp();
 #endif // STATE_H

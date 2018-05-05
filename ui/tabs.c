@@ -119,9 +119,11 @@ void tabs_onStateChange() {
     }
 }
 
-void update_runtime_display() {
+void update_on_clock_cycle() {
     if (selected_panel == HOME) {
         home_updateRuntime();
+    } else if (selected_panel == STATS) {
+        stats_redrawGraphs();
     }
 }
 

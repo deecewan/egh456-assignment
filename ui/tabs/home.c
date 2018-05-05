@@ -72,7 +72,7 @@ void paint_home(tWidget *psWidget, tContext *psContext) {
 
 
     updateStateIndicator();
-    update_runtime_display();
+    home_updateRuntime();
 }
 
 void onPress(tWidget *psWidget) {

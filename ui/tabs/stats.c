@@ -6,9 +6,12 @@
 #include <grlib/pushbutton.h>
 #include "drivers/kentec320x240x16_ssd2119.h"
 #include "../tabs.h"
+#include "../state.h"
 #include "stats.h"
 
 static VISIBILITY visibility = LINE_MOTOR_SPEED | LINE_CURRENT | LINE_TEMP;
+
+void draw_charts(tWidget *psWidget, tContext *context);
 
 void toggle_vis_motor_speed();
 void toggle_vis_current();
@@ -33,6 +36,10 @@ RectangularButton(legendTemp, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
   PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrDeepPink, ClrDeepPink, 0, ClrBlack,
   g_psFontCmss16, "Temperature", 0, 0, 0, 0, toggle_vis_temp);
 
+Canvas(graphArea, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
+       11, 28, 299, 145, CANVAS_STYLE_APP_DRAWN | CANVAS_STYLE_FILL,
+       0, 0, 0, 0, 0, 0, draw_charts);
+
 void paint_legend_item(VISIBILITY filter, tPushButtonWidget *button, uint32_t color) {
     uint32_t fill, text;
     if (visibility & filter) {
@@ -46,7 +53,9 @@ void paint_legend_item(VISIBILITY filter, tPushButtonWidget *button, uint32_t co
     PushButtonFillColorSet(button, fill);
     PushButtonTextColorSet(button, text);
     WidgetPaint((tWidget *)button);
+    WidgetPaint((tWidget *)&graphArea);
 }
+
 
 void toggle_vis_motor_speed() {
     toggle_visibility(LINE_MOTOR_SPEED);
@@ -72,4 +81,40 @@ void paint_stats(tWidget *psWidget, tContext *psContext) {
     WidgetAdd(psWidget, (tWidget *)&legendMotorSpeed);
     WidgetAdd(psWidget, (tWidget *)&legendCurrent);
     WidgetAdd(psWidget, (tWidget *)&legendTemp);
+    WidgetAdd(psWidget, (tWidget *)&graphArea);
+}
+
+
+uint32_t scale_value(uint32_t largest, uint32_t value) {
+    return 170 - (value * ((float)140 / largest));
+}
+
+void draw_chart(tContext *context, uint32_t color, uint32_t *list, uint32_t largest) {
+    GrContextForegroundSet(context, color);
+    for (uint8_t i = 0; i < LIST_ITEM_COUNT; i++) {
+        uint32_t current = scale_value(largest, list[i]);
+        GrCircleDraw(context, LINE_Y_VALUE(i), current, CIRCLE_RADIUS);
+        // skip the first because we can't draw a line to nowhere
+        if (i > 0) {
+            uint32_t last = scale_value(largest, list[i - 1]);
+            // draw a line linking the two dots
+            GrLineDraw(context, LINE_Y_VALUE(i - 1), last, LINE_Y_VALUE(i), current);
+        }
+    }
+}
+
+void draw_charts(tWidget *psWidget, tContext *context) {
+    if (visibility & LINE_MOTOR_SPEED) {
+        draw_chart(context, ClrChartreuse, get_motor_speed_list(), get_largest_motor_speed());
+    }
+    if (visibility & LINE_CURRENT) {
+        draw_chart(context, ClrCornflowerBlue, get_current_list(), get_largest_current());
+    }
+    if (visibility & LINE_TEMP) {
+        draw_chart(context, ClrDeepPink, get_temp_list(), get_largest_temp());
+    }
+}
+
+void stats_redrawGraphs() {
+    WidgetPaint((tWidget *)&graphArea);
 }

@@ -53,10 +53,15 @@ Void idleTask() {
 Void clockRuntimeTracker(UArg arg) {
     increment_run_time();
 
-    update_runtime_display();
+    appendToMotorSpeed(urand());
+    appendToCurrent(urand());
+    appendToTemp(urand());
+
+    update_on_clock_cycle();
 }
 
 void ui_setup(uint32_t sysclock) {
+  usrand(sysclock);
   // Init the display driver
   Kentec320x240x16_SSD2119Init(sysclock);
 

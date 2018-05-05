@@ -5,7 +5,7 @@
 void setup_tabs();
 void select_tab(uint32_t idx);
 void tabs_onStateChange();
-void update_runtime_display();
+void update_on_clock_cycle();
 
 void wipe_panel_area();
 void hide_current_panel();
