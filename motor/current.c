@@ -23,6 +23,9 @@
 void StartADCSampling();
 double GetCurrentValue();
 
+/*
+ * Starts the ADC sampling hardware for the current line.
+ */
 void StartADCSampling() {
     // Initialise ADC hardware (Page 11 of DK-TM4C129X User's Guide has relevant board pin information)
     SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
@@ -62,6 +65,9 @@ void StartADCSampling() {
     ADCIntClear(ADC0_BASE, SEQUENCE_NUMBER);
 }
 
+/*
+ * Gets the most recent VIout sample stored by ADC sampler and calculates current value from that.
+ */
 double GetCurrentValue() {
     //
     // This array is used for storing the data read from the ADC FIFO. It
@@ -87,6 +93,5 @@ double GetCurrentValue() {
     // Convert digital value to current reading (VREF- is 0, so it can be ignored)
     VIOUT = ((pui32ADC0Value[0] & twelve_bitmask) * REF_VOLTAGE_PLUS) / RESOLUTION;
     current_value = VIOUT / VCC;
-
     return current_value;
 }

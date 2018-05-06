@@ -1,11 +1,10 @@
 #include <stdint.h>
 #include <math.h>
 #include "stdbool.h"
-#include <xdc/runtime/System.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/pin_map.h>
 #include <driverlib/gpio.h>
-#include "driverlib/i2c.h"
+#include <driverlib/i2c.h>
 #include <inc/hw_memmap.h>
 
 #define T_SLAVE_ADDRESS 0x3A // or 0X3B depending upon how pin is configured // thermometer 7-bit address given in page 15 of MLX90632 datasheet
@@ -16,18 +15,19 @@
 #define TA_O 25
 #define TO_O 25
 
-int16_t Gb, Ka, Ha, Hb;
-int32_t Ea, Eb, Fa, Fb, Ga, Pr, Po, Pg, Pt;
+// Private global variables shared only between this file's functions
+static int16_t Gb, Ka, Ha, Hb;
+static int32_t Ea, Eb, Fa, Fb, Ga, Pr, Po, Pg, Pt;
 
 /*
  * Function Prototypes
  */
 void ConnectWithTemperatureSensor();
 double GetTemperature();
-void StartTemperatureSensor();
-void InitialiseCalibrationConstants();
-double CalculateTemperature(double temperature_old, int16_t status_reading);
-int16_t ReadFromRegister(uint16_t register_address);
+static void StartTemperatureSensor();
+static void InitialiseCalibrationConstants();
+static double CalculateTemperature(double temperature_old, int16_t status_reading);
+static int16_t ReadFromRegister(uint16_t register_address);
 
 /*
  * Initializes connections and constants needed to read object temperature
@@ -67,7 +67,7 @@ double GetTemperature() {
  * Starts the temperature sensor connected to the motor.
  */
 // Refer to pages 11, 12 and 16 of MLX90632 datasheet for exact process details.
-void StartTemperatureSensor() {
+static void StartTemperatureSensor() {
     int i = 0;
     I2CMasterSlaveAddrSet(I2C2_BASE, T_SLAVE_ADDRESS, false); // Send first slave address data bit to configure master device to be writer
 
@@ -98,7 +98,7 @@ void StartTemperatureSensor() {
  * addresses given in pages 11 and 12 of the datasheet.
  */
 // Refer to pages 11, 12 and 16 of MLX90632 datasheet.
-void InitialiseCalibrationConstants() {
+static void InitialiseCalibrationConstants() {
     Gb = (ReadFromRegister(0x242E)) * pow(2, -10);
     Ka = (ReadFromRegister(0x242F)) * pow(2, -10);
     Ha = (ReadFromRegister(0x2481)) * pow(2, -14);
@@ -117,7 +117,7 @@ void InitialiseCalibrationConstants() {
 /*
  * Calculates the motor's object temperature based on current iteration's sensor readings.
  */
-double CalculateTemperature(double temperature_old, int16_t status_reading) {
+static double CalculateTemperature(double temperature_old, int16_t status_reading) {
     int16_t cycle_position = ((status_reading & 0b1111100) >> 2);
     int16_t RAM_6 = ReadFromRegister(0x4005), RAM_9 = ReadFromRegister(0x4008), RAM_A, RAM_B;
     double AMB, Ta_C, Ta_K, To_K, To_C, S, STO, VRTA, VRTO;
@@ -142,14 +142,13 @@ double CalculateTemperature(double temperature_old, int16_t status_reading) {
     Ta_K = Ta_C + KELVIN_OFFSET;
     To_K = (STO / (Fa * Ha * (1.0 + Ga * (temperature_old - TO_O) + Fb * (Ta_C - TA_O)))) + pow(Ta_K, 4);
     To_C = pow(To_K, 0.25) - KELVIN_OFFSET - Hb;
-
     return To_C;
 }
 
 /*
  *  Performs a read operation on the specified 16 bit register address in the temperature sensor.
  */
-int16_t ReadFromRegister(uint16_t register_address) {
+static int16_t ReadFromRegister(uint16_t register_address) {
     int i, j;
     uint16_t fetched_constant = 0x00;
     uint32_t send_receive[2] = {I2C_MASTER_CMD_SINGLE_SEND, I2C_MASTER_CMD_SINGLE_RECEIVE};

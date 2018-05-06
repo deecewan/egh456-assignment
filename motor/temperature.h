@@ -10,9 +10,9 @@
  */
 void ConnectWithTemperatureSensor();
 double GetTemperature();
-void StartTemperatureSensor();
-void InitialiseCalibrationConstants();
-double CalculateTemperature(double temperature_old, int16_t status_reading);
-int16_t ReadFromRegister(uint16_t register_address);
+static void StartTemperatureSensor();
+static void InitialiseCalibrationConstants();
+static double CalculateTemperature(double temperature_old, int16_t status_reading);
+static int16_t ReadFromRegister(uint16_t register_address);
 
 #endif /* MOTOR_TEMPERATURE_H_ */
