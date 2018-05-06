@@ -34,6 +34,7 @@ static int16_t ReadFromRegister(uint16_t register_address);
  * measurements continuously from the temperature sensor.
  */
 void ConnectWithTemperatureSensor() {
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C2);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
     GPIOPinConfigure(GPIO_PL1_I2C2SCL);
     GPIOPinConfigure(GPIO_PL0_I2C2SDA);
