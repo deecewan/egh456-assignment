@@ -8,16 +8,14 @@
 #include "driverlib/uart.h"
 #include "utils/uartstdio.h"
 
-// May not have to use these two constants at all:
-#define VIOUT_MAX VCC + 0.5 // Maximum output signal (page 3 of current sensor datasheet)
-#define VIOUT_MIN VCC * 0.1 // Zero current output signal (page 23 of current sensor datasheet)
-
-#define VCC 24 // According to assignment document
+#define VCC 5 // According to sensor datasheet
+#define SENSITIVITY 0.2 // 200 millVolts/A = 0.2 V/A for 10 AB (our current sensor)
 #define FIRST_STEP 0
 #define SEQUENCE_NUMBER 0 // Could be any value from 0 to 3 since only one sample is needed at a given request
 #define ADC_PRIORITY 0
 #define RESOLUTION 4095 // max digital value for 12 bit sample
 #define REF_VOLTAGE_PLUS 3.3 // Reference voltage used for ADC process, given in page 2149 of TM4C129XNCZAD Microcontroller Data Sheet
+#define NEUTRAL_VIOUT 0.5*VCC
 
 // Function prototypes
 void StartADCSampling();
@@ -39,7 +37,6 @@ void StartADCSampling() {
     // to sequence 3.  This example is arbitrarily using sequence 3.
     //
     ADCSequenceConfigure(ADC0_BASE, SEQUENCE_NUMBER, ADC_TRIGGER_PROCESSOR, ADC_PRIORITY);
-    // ADCSequenceConfigure(ADC0_BASE, SEQUENCE_NUMBER, ADC_TRIGGER_ALWAYS, ADC_PRIORITY);
 
     //
     // Configure step 0 on sequence 0.  Sample channel 0 (ADC_CTL_CH0) in
@@ -92,6 +89,6 @@ double GetCurrentValue() {
 
     // Convert digital value to current reading (VREF- is 0, so it can be ignored)
     VIOUT = ((pui32ADC0Value[0] & twelve_bitmask) * REF_VOLTAGE_PLUS) / RESOLUTION;
-    current_value = VIOUT / VCC;
+    current_value = (VIOUT - NEUTRAL_VIOUT) / SENSITIVITY;
     return current_value;
 }
