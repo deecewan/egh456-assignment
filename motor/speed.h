@@ -7,6 +7,7 @@ uint8_t ConnectWithHallSensors();
 double GetMotorSpeed();
 void StartMotor();
 void SetMotorSpeed();
+void StopMotor();
 void CalculateMaximumAcceleration();
 static uint8_t GetCurrentHallState();
 

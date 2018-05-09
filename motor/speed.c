@@ -8,6 +8,13 @@
 #define NUM_STATES 6
 #define MILLISECONDS_IN_MINUTE 6000
 
+#define MOTOR_VREF 3.3
+#define FAULT_VOLTS MOTOR_VREF // 11 indicates everything is normal, 00 shutdown, all else is warning
+#define MAX_PWM_V 3.6
+#define MIN_PWM_V 2.0
+#define SAMPLING_FREQUENCY 500000 // 500 kHz
+// Have a 100ns PWM pulse
+
 const uint8_t HALL_SENSOR_STATES[NUM_STATES] = {1, 101, 100, 110, 10, 11};
 static uint8_t checkpoint_state; // can only be changed through publicly available functions
 
@@ -18,15 +25,19 @@ uint8_t ConnectWithHallSensors();
 double GetMotorSpeed();
 void StartMotor();
 void SetMotorSpeed();
+void StopMotor();
 void CalculateMaximumAcceleration();
 static uint8_t GetCurrentHallState();
 
 /*
- * Initializes connection to read from all three hall sensors.
+ * Initializes connection to read from all three hall sensors and fault lines.
  */
 uint8_t ConnectWithHallSensors() {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOP);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+    GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, GPIO_PIN_6);
+    GPIOPinTypeGPIOInput(GPIO_PORTL_BASE, GPIO_PIN_2);
     GPIOPinTypeGPIOInput(GPIO_PORTL_BASE, GPIO_PIN_3);
     GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_4);
     GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_5);
@@ -63,10 +74,33 @@ double GetMotorSpeed() {
 }
 
 void StartMotor() {
-    ;
+    // Initiate connection with motor's half bridges and fault sensor
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOM);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+
+    // Initialise PWM hardware
+    SysCtlPWMClockSet(SYSCTL_PWMDIV_1); // Set the PWM clock to the system clock.
+    GPIOPinConfigure(GPIO_PM0_T2CCP0);
+    GPIOPinConfigure(GPIO_PM1_T2CCP1);
+    GPIOPinConfigure(GPIO_PM2_T3CCP0);
+    GPIOPinConfigure(GPIO_PA7_T3CCP1);
+    GPIOPinConfigure(GPIO_PL4_T0CCP0);
+    GPIOPinConfigure(GPIO_PL5_T0CCP1);
+    GPIOPinTypePWM(GPIO_PORTM_BASE, GPIO_PIN_0);
+    GPIOPinTypePWM(GPIO_PORTM_BASE, GPIO_PIN_1);
+    GPIOPinTypePWM(GPIO_PORTM_BASE, GPIO_PIN_2);
+    GPIOPinTypePWM(GPIO_PORTA_BASE, GPIO_PIN_7);
+    GPIOPinTypePWM(GPIO_PORTL_BASE, GPIO_PIN_4);
+    GPIOPinTypePWM(GPIO_PORTL_BASE, GPIO_PIN_5);
 }
 
 void SetMotorSpeed() {
+    ;
+}
+
+
+void StopMotor() {
     ;
 }
 

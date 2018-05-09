@@ -7,6 +7,8 @@
 #include <driverlib/i2c.h>
 #include <inc/hw_memmap.h>
 
+#define MIN_TA_ALLOWED -40 // For motor to work according to its datasheet
+#define MAX_TA_ALLOWED 85
 #define T_SLAVE_ADDRESS 0x3A // or 0X3B depending upon how pin is configured // thermometer 7-bit address given in page 15 of MLX90632 datasheet
 #define LOW_TEMP_LIMIT -20 // Minimum temperature that can be detected for object
 #define UPPER_TEMP_LIMIT 200 // Maximum temperature that can be detected for object
@@ -36,11 +38,13 @@ static int16_t ReadFromRegister(uint16_t register_address);
 void ConnectWithTemperatureSensor() {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C2);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
+    SysCtlDelay(10);
+
     GPIOPinConfigure(GPIO_PL1_I2C2SCL);
     GPIOPinConfigure(GPIO_PL0_I2C2SDA);
     GPIOPinTypeI2CSCL(GPIO_PORTL_BASE, GPIO_PIN_1);
     GPIOPinTypeI2C(GPIO_PORTL_BASE, GPIO_PIN_0);
-    I2CMasterInitExpClk(I2C2_BASE, SysCtlClockGet(), true);
+    I2CMasterInitExpClk(I2C2_BASE, SysCtlClockGet(), false);
     StartTemperatureSensor();
     InitialiseCalibrationConstants();
 }
@@ -150,9 +154,9 @@ static double CalculateTemperature(double temperature_old, int16_t status_readin
  *  Performs a read operation on the specified 16 bit register address in the temperature sensor.
  */
 static int16_t ReadFromRegister(uint16_t register_address) {
-    int i, j;
-    uint16_t fetched_constant = 0x00;
-    uint32_t send_receive[2] = {I2C_MASTER_CMD_SINGLE_SEND, I2C_MASTER_CMD_SINGLE_RECEIVE};
+    int i, j, k;
+    int16_t fetched_constant = 0x00;
+    uint32_t send_receive[4] = {I2C_MASTER_CMD_BURST_SEND_START, I2C_MASTER_CMD_BURST_SEND_FINISH, I2C_MASTER_CMD_BURST_RECEIVE_START, I2C_MASTER_CMD_BURST_RECEIVE_FINISH};
     bool write_read[2] = {false, true};
 
     // Data bits transmission order as specified in page 16 of sensor datasheet.
@@ -163,19 +167,23 @@ static int16_t ReadFromRegister(uint16_t register_address) {
             switch (i*10 + j) {
                 case 0:
                     I2CMasterDataPut(I2C2_BASE, register_address >> 8);
+                    k = 0;
                     break;
                 case 1:
                     I2CMasterDataPut(I2C2_BASE, register_address & 0xff);
+                    k = 1;
                     break;
                 case 10:
-                    fetched_constant = (uint16_t)(I2CMasterDataGet(I2C2_BASE) << 8);
+                    fetched_constant = (int16_t)(I2CMasterDataGet(I2C2_BASE) << 8);
+                    k = 2;
                     break;
                 case 11:
-                    fetched_constant |= ((uint16_t)I2CMasterDataGet(I2C2_BASE));
+                    fetched_constant |= ((int16_t)I2CMasterDataGet(I2C2_BASE));
+                    k = 3;
                     break;
             }
 
-            I2CMasterControl(I2C2_BASE, send_receive[i]); // Transmit data bits
+            I2CMasterControl(I2C2_BASE, send_receive[k]); // Transmit data bits
             while(I2CMasterBusy(I2C2_BASE)); // Wait for transmission to end
         }
     }
