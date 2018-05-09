@@ -93,12 +93,12 @@ void draw_chart(tContext *context, uint32_t color, uint32_t *list, uint32_t larg
     GrContextForegroundSet(context, color);
     for (uint8_t i = 0; i < LIST_ITEM_COUNT; i++) {
         uint32_t current = scale_value(largest, list[i]);
-        GrCircleDraw(context, LINE_Y_VALUE(i), current, CIRCLE_RADIUS);
+        GrCircleDraw(context, LINE_X_VALUE(i), current, CIRCLE_RADIUS);
         // skip the first because we can't draw a line to nowhere
         if (i > 0) {
             uint32_t last = scale_value(largest, list[i - 1]);
             // draw a line linking the two dots
-            GrLineDraw(context, LINE_Y_VALUE(i - 1), last, LINE_Y_VALUE(i), current);
+            GrLineDraw(context, LINE_X_VALUE(i - 1), last, LINE_X_VALUE(i), current);
         }
     }
 }

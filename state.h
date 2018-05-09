@@ -28,7 +28,7 @@ typedef struct ListItem {
     struct ListItem* next;
 } ListItem;
 
-#define LIST_ITEM_COUNT 20
+#define LIST_ITEM_COUNT 50
 
 uint32_t *get_motor_speed_list();
 uint32_t *get_current_list();
