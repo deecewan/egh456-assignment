@@ -7,17 +7,13 @@
 #include <driverlib/i2c.h>
 #include <inc/hw_memmap.h>
 
-#define MIN_TA_ALLOWED -40 // For motor to work according to its datasheet
-#define MAX_TA_ALLOWED 85
-#define T_SLAVE_ADDRESS 0x3A // or 0X3B depending upon how pin is configured // thermometer 7-bit address given in page 15 of MLX90632 datasheet
-#define LOW_TEMP_LIMIT -20 // Minimum temperature that can be detected for object
-#define UPPER_TEMP_LIMIT 200 // Maximum temperature that can be detected for object
-#define CALCULATION_ITERATIONS 3 // number of iterations sensor takes to calculate object temperature
+#define T_SLAVE_ADDRESS 0x3A // page 15 of MLX90632 datasheet
+#define CALCULATION_ITERATIONS 3 // page 22 of MLX90632 datasheet
+
 #define KELVIN_OFFSET 273.15
 #define TA_O 25
 #define TO_O 25
 
-// Private global variables shared only between this file's functions
 static int16_t Gb, Ka, Ha, Hb;
 static int32_t Ea, Eb, Fa, Fb, Ga, Pr, Po, Pg, Pt;
 
@@ -26,9 +22,9 @@ static int32_t Ea, Eb, Fa, Fb, Ga, Pr, Po, Pg, Pt;
  */
 void ConnectWithTemperatureSensor();
 double GetTemperature();
-static void StartTemperatureSensor();
 static void InitialiseCalibrationConstants();
 static double CalculateTemperature(double temperature_old, int16_t status_reading);
+static void WriteToRegister(uint16_t register_address, uint16_t data_packet);
 static int16_t ReadFromRegister(uint16_t register_address);
 
 /*
@@ -38,71 +34,19 @@ static int16_t ReadFromRegister(uint16_t register_address);
 void ConnectWithTemperatureSensor() {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C2);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
-    SysCtlDelay(10);
-
     GPIOPinConfigure(GPIO_PL1_I2C2SCL);
     GPIOPinConfigure(GPIO_PL0_I2C2SDA);
     GPIOPinTypeI2CSCL(GPIO_PORTL_BASE, GPIO_PIN_1);
     GPIOPinTypeI2C(GPIO_PORTL_BASE, GPIO_PIN_0);
     I2CMasterInitExpClk(I2C2_BASE, SysCtlClockGet(), false);
-    StartTemperatureSensor();
+    WriteToRegister(0x3001, 0x06); // starts sensor in continuous mode
     InitialiseCalibrationConstants();
 }
 
 /*
- * Returns the motor's object temperature based on current sensor readings.
- */
-double GetTemperature() {
-    int16_t i, status_reading, new_data = 0;
-    double temperature_C = 25; // Recommended initial value in page 22 of MLX90632 datasheet
-
-    for (i = 0; i < CALCULATION_ITERATIONS; i++) {
-        while (new_data == 0) {
-            status_reading = ReadFromRegister(0x3FFF);
-            new_data = (status_reading & 0b1);
-        }
-
-        temperature_C = CalculateTemperature(temperature_C, status_reading);
-    }
-
-    return temperature_C;
-}
-
-/*
- * Starts the temperature sensor connected to the motor.
- */
-// Refer to pages 11, 12 and 16 of MLX90632 datasheet for exact process details.
-static void StartTemperatureSensor() {
-    int i = 0;
-    I2CMasterSlaveAddrSet(I2C2_BASE, T_SLAVE_ADDRESS, false); // Send first slave address data bit to configure master device to be writer
-
-    // Tell sensor to activate in continuous mode
-    for (i = 0; i < 4; i++) { // four data bytes to send for a write operation
-        switch(i) {
-            case 0:
-                I2CMasterDataPut(I2C2_BASE, 0x3001 >> 8); // Connect to REG_CONTROL register (MSByte transmission)
-                break;
-            case 1:
-                I2CMasterDataPut(I2C2_BASE, 0x3001 & 0xff); // Connect to REG_CONTROL register (MSByte transmission)
-                break;
-            case 2:
-                I2CMasterDataPut(I2C2_BASE, 0x00); // Enable temperature sensor in continous mode
-                break;
-            case 3:
-                I2CMasterDataPut(I2C2_BASE, 0x06); // Enable temperature sensor in continous mode
-                break;
-        }
-
-        I2CMasterControl(I2C2_BASE, I2C_MASTER_CMD_SINGLE_SEND); // Transmit data bits
-        while(I2CMasterBusy(I2C2_BASE)); // Wait for transmission to end
-    }
-}
-
-/*
  * Initializes relevant calibration constants from the temperature sensor using
- * addresses given in pages 11 and 12 of the datasheet.
+ * addresses and equations given in pages 11, 12 and 23 of the datasheet.
  */
-// Refer to pages 11, 12 and 16 of MLX90632 datasheet.
 static void InitialiseCalibrationConstants() {
     Gb = (ReadFromRegister(0x242E)) * pow(2, -10);
     Ka = (ReadFromRegister(0x242F)) * pow(2, -10);
@@ -117,6 +61,26 @@ static void InitialiseCalibrationConstants() {
     Po = ((ReadFromRegister(0x2413) << 16) | ReadFromRegister(0x2412)) * pow(2, -8);
     Pg = ((ReadFromRegister(0x240F) << 16) | ReadFromRegister(0x240E)) * pow(2, -20);
     Pt = ((ReadFromRegister(0x2411) << 16) | ReadFromRegister(0x2410)) * pow(2, -44);
+}
+
+/*
+ * Returns the motor's object temperature based on current sensor readings.
+ */
+double GetTemperature() {
+    int16_t i, status_reading, new_data = 0;
+    double temperature_C = 25; // Recommended initial value in page 22 of MLX90632 datasheet
+
+    WriteToRegister(0x3FFF, 0b100000000); // reset bits in REG_STATUS
+    while (new_data == 0) { // Wait until sensor gets new reading
+        status_reading = ReadFromRegister(0x3FFF);
+        new_data = (status_reading & 0b1);
+    }
+
+    for (i = 0; i < 3; i++) { // Suggested number of iterations to get right temperature value
+        temperature_C = CalculateTemperature(temperature_C, status_reading);
+    }
+
+    return temperature_C;
 }
 
 /*
@@ -151,7 +115,34 @@ static double CalculateTemperature(double temperature_old, int16_t status_readin
 }
 
 /*
- *  Performs a read operation on the specified 16 bit register address in the temperature sensor.
+ * Writes the given data packet to the given register address by following
+ * the process described in page 16 of the MLX90632 datasheet.
+ */
+void WriteToRegister(uint16_t register_address, uint16_t data_packet) {
+    I2CMasterSlaveAddrSet(I2C2_BASE, T_SLAVE_ADDRESS, false);
+    while(I2CMasterBusy(I2C2_BASE));
+
+    I2CMasterDataPut(I2C2_BASE, register_address >> 8);
+    I2CMasterControl(I2C2_BASE, I2C_MASTER_CMD_BURST_SEND_START);
+    while(I2CMasterBusy(I2C2_BASE));
+
+    I2CMasterDataPut(I2C2_BASE, register_address & 0xff);
+    I2CMasterControl(I2C2_BASE, I2C_MASTER_CMD_BURST_SEND_CONT);
+    while(I2CMasterBusy(I2C2_BASE));
+
+    I2CMasterDataPut(I2C2_BASE, data_packet >> 8);
+    I2CMasterControl(I2C2_BASE, I2C_MASTER_CMD_BURST_SEND_CONT);
+    while(I2CMasterBusy(I2C2_BASE));
+
+    I2CMasterDataPut(I2C2_BASE, data_packet & 0xff);
+    I2CMasterControl(I2C2_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
+    while(I2CMasterBusy(I2C2_BASE));
+}
+
+/*
+ *  Performs a read operation on the specified 16 bit register address in the
+ *  temperature sensor by following the process described in page 16 of the
+ *  MLX90632 datasheet.
  */
 static int16_t ReadFromRegister(uint16_t register_address) {
     int i, j, k;
@@ -167,24 +158,21 @@ static int16_t ReadFromRegister(uint16_t register_address) {
             switch (i*10 + j) {
                 case 0:
                     I2CMasterDataPut(I2C2_BASE, register_address >> 8);
-                    k = 0;
                     break;
                 case 1:
                     I2CMasterDataPut(I2C2_BASE, register_address & 0xff);
-                    k = 1;
                     break;
                 case 10:
                     fetched_constant = (int16_t)(I2CMasterDataGet(I2C2_BASE) << 8);
-                    k = 2;
                     break;
                 case 11:
                     fetched_constant |= ((int16_t)I2CMasterDataGet(I2C2_BASE));
-                    k = 3;
                     break;
             }
 
             I2CMasterControl(I2C2_BASE, send_receive[k]); // Transmit data bits
             while(I2CMasterBusy(I2C2_BASE)); // Wait for transmission to end
+            ++k;
         }
     }
 

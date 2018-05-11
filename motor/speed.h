@@ -1,7 +1,8 @@
 #ifndef MOTOR_SPEED_H_
 #define MOTOR_SPEED_H_
 
-#define MILLISECONDS_IN_MINUTE 6000
+#define SECONDS_IN_MINUTE 60
+#define T_CPU_CLOCK_SPEED 120000000
 
 uint8_t ConnectWithHallSensors();
 double GetMotorSpeed(double seconds);
