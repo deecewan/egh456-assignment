@@ -99,7 +99,7 @@ static uint32_t listMotorSpeedLargest = 280;
 static uint32_t listCurrent[LIST_ITEM_COUNT] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
 static uint32_t listCurrentLargest = 140;
 static uint32_t listTemp[LIST_ITEM_COUNT] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static uint32_t listTempLargest = 140;
+static uint32_t listTempLargest = 0;
 
 void append(uint32_t *list, uint32_t value) {
     for (uint8_t i = 1; i < LIST_ITEM_COUNT; i++) {

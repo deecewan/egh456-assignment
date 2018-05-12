@@ -6,6 +6,7 @@
 #include <grlib/pushbutton.h>
 #include <utils/ustdlib.h>
 #include "drivers/kentec320x240x16_ssd2119.h"
+#include "motor/speed.h"
 #include "constants.h"
 #include "state.h"
 #include "../tabs.h"
@@ -86,11 +87,14 @@ void onPress(tWidget *psWidget) {
         fill = ClrRed;
         press_fill = ClrLightSalmon;
         text = "Stop";
+        StartMotor();
+        SetMotorSpeed((int)get_motor_speed());
         break;
       case OFF:
         fill = ClrGreenYellow;
         press_fill = ClrGreen;
         text = "Start";
+        StopMotor();
         break;
     }
 

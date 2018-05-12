@@ -37,4 +37,8 @@ uint32_t *get_temp_list();
 uint32_t get_largest_motor_speed();
 uint32_t get_largest_current();
 uint32_t get_largest_temp();
+
+void appendToMotorSpeed(uint32_t value);
+void appendToCurrent(uint32_t value);
+void appendToTemp(uint32_t value);
 #endif // STATE_H

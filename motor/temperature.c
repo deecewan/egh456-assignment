@@ -145,7 +145,7 @@ void WriteToRegister(uint16_t register_address, uint16_t data_packet) {
  *  MLX90632 datasheet.
  */
 static int16_t ReadFromRegister(uint16_t register_address) {
-    int i, j, k;
+    int i, j, k = 0;
     int16_t fetched_constant = 0x00;
     uint32_t send_receive[4] = {I2C_MASTER_CMD_BURST_SEND_START, I2C_MASTER_CMD_BURST_SEND_FINISH, I2C_MASTER_CMD_BURST_RECEIVE_START, I2C_MASTER_CMD_BURST_RECEIVE_FINISH};
     bool write_read[2] = {false, true};
