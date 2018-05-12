@@ -5,6 +5,8 @@
 #include <grlib/canvas.h>
 #include <grlib/pushbutton.h>
 #include <utils/ustdlib.h>
+#include <ti/sysbios/hal/Seconds.h>
+#include <time.h>
 #include "drivers/kentec320x240x16_ssd2119.h"
 #include "motor/speed.h"
 #include "constants.h"
@@ -38,6 +40,12 @@ Canvas(textRuntimeValue, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  60, 140, 105, 20,
                  CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, runtime, 0, 0);
+
+char timestamp[30] = "";
+Canvas(textTimestamp, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
+                 60, 170, 105, 20,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
+                 ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, timestamp, 0, 0);
 static char motorSpeed[22] = "Motor Speed: 0 rpm"; // allows up to 5 digits
 Canvas(textMotorSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  160, 100, 150, 20,
@@ -54,6 +62,16 @@ Canvas(textTempLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, tempLimit, 0, 0);
 
+void updateDateDisplay() {
+    time_t t;
+    struct tm *ltm;
+    t = time(NULL);
+    ltm = localtime(&t);
+    usprintf(timestamp, "%s", asctime(ltm));
+
+    WidgetPaint((tWidget *)&textTimestamp);
+}
+
 void paint_home(tWidget *psWidget, tContext *psContext) {
     WidgetAdd(psWidget, (tWidget *)&btnToggleMotor);
 
@@ -62,6 +80,8 @@ void paint_home(tWidget *psWidget, tContext *psContext) {
 
     WidgetAdd(psWidget, (tWidget *)&textRuntime);
     WidgetAdd(psWidget, (tWidget *)&textRuntimeValue);
+
+    WidgetAdd(psWidget, (tWidget *)&textTimestamp);
 
     usprintf(motorSpeed, "Motor Speed: %d rpm", get_motor_speed());
     usprintf(currentLimit, "Current Limit: %d mA", get_current_limit());
@@ -139,6 +159,7 @@ void home_onStateChange() {
 }
 
 void home_updateRuntime() {
+//    updateDateDisplay(); // if/when this works, it'll display the date on the screen!
     uint32_t hours, minutes, seconds = get_run_time();
     minutes = seconds / 60;
     hours = minutes / 60;
@@ -151,6 +172,5 @@ void home_updateRuntime() {
     } else {
         usprintf(runtime, "%us", seconds);
     }
-//    CanvasTextSet(&textRuntimeValue, runtime);
     WidgetPaint((tWidget *)&textRuntimeValue);
 }
