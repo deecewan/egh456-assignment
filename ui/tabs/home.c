@@ -91,12 +91,11 @@ void paint_home(tWidget *psWidget, tContext *psContext) {
     WidgetAdd(psWidget, (tWidget *)&textCurrentLimit);
     WidgetAdd(psWidget, (tWidget *)&textTempLimit);
 
-
     updateStateIndicator();
     home_updateRuntime();
 }
 
-void onPress(tWidget *psWidget) {
+void updateStartStopButton() {
     toggle_motor_power();
     MOTOR_POWER power = get_motor_power();
     uint32_t fill, press_fill;
@@ -122,6 +121,10 @@ void onPress(tWidget *psWidget) {
     PushButtonFillColorPressedSet(&btnToggleMotor, press_fill);
     PushButtonTextSet(&btnToggleMotor, text);
     WidgetPaint((tWidget *)&btnToggleMotor);
+}
+
+void onPress(tWidget *psWidget) {
+    updateStartStopButton();
 }
 
 void updateStateIndicator() {

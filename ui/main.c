@@ -98,6 +98,7 @@ Void clockRuntimeTracker(UArg arg) {
     double latest_average_temp = 0;//GetFilteredTemperature();
     checkWithinLimits(latest_average_current, latest_average_temp);
     updateMotorState(latest_average_speed);
+    updateStartStopButton();
 
     if (counter == 200) {
         increment_run_time();
