@@ -100,7 +100,7 @@ Void clockRuntimeTracker(UArg arg) {
     updateMotorState(latest_average_speed);
     updateStartStopButton();
 
-    if (counter == 200) {
+    if (counter == 1000) {
         increment_run_time();
         appendToMotorSpeed(latest_average_speed);
         appendToCurrent(latest_average_current * 1000);
