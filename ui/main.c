@@ -22,6 +22,8 @@
 
 #define TASKSTACKSIZE   512
 
+Task_Struct taskTakeMeasurementStruct;
+Char taskTakeMeasurementStack[TASKSTACKSIZE];
 Clock_Struct clockRuntimeTrackerStruct;
 Clock_Struct clockTakeMeasurementStruct;
 
@@ -94,18 +96,20 @@ Void clockRuntimeTracker(UArg arg) {
     update_on_clock_cycle();
 }
 
-Void clockTakeMeasurement(UArg arg) {
-    RotateMotor();
-    TakeMeasurements();
-    if (!ReadingsReady()) {
-        return;
-    }
-    double latest_average_speed = GetFilteredSpeed();
-    double latest_average_current = GetFilteredCurrentValue();
-    double latest_average_temp = GetFilteredTemperature();
+Void taskTakeMeasurement(UArg arg0, UArg arg1) {
+    while (1) {
+        RotateMotor();
+        TakeMeasurements();
+        if (ReadingsReady()) {
+            double latest_average_speed = GetFilteredSpeed();
+            double latest_average_current = GetFilteredCurrentValue();
+            double latest_average_temp = GetFilteredTemperature();
 
-    checkWithinLimits(latest_average_current, latest_average_temp);
-    updateMotorState(latest_average_speed);
+            checkWithinLimits(latest_average_current, latest_average_temp);
+            updateMotorState(latest_average_speed);
+        }
+        Task_sleep(1000); // 1ms
+    }
 }
 
 void ui_setup(uint32_t sysclock, int hardware_status) {
@@ -128,36 +132,31 @@ void ui_setup(uint32_t sysclock, int hardware_status) {
       return;
   }
 
-  // set up clock to track run time
-  Clock_Params clkParams;
-  Clock_Params_init(&clkParams);
-  clkParams.startFlag = TRUE;
-  clkParams.period = 1000;
-  Clock_construct(
-      &clockRuntimeTrackerStruct,
-      (Clock_FuncPtr)clockRuntimeTracker,
-      1,
-      &clkParams
-  );
-
-  // set up clock to take measurements every 1 millisecond
-//  Clock_Params clkParams2;
-//  Clock_Params_init(&clkParams2);
-//  clkParams2.startFlag = TRUE;
-//  clkParams2.period = 1;
-//  Clock_construct(
-//      &clockTakeMeasurementStruct,
-//      (Clock_FuncPtr)clockTakeMeasurement,
-//      1,
-//      &clkParams2
-//  );
-
   // Perform all setup functionality **here**
   setup_tabs(); // buttons are setup now
 
   // perform the first paint of the widgets
   WidgetPaint(WIDGET_ROOT);
 
+  // set up clock to track run time
+//  Clock_Params clkParams;
+//  Clock_Params_init(&clkParams);
+//  clkParams.startFlag = TRUE;
+//  clkParams.period = 1000;
+//  Clock_construct(
+//      &clockRuntimeTrackerStruct,
+//      (Clock_FuncPtr)clockRuntimeTracker,
+//      1,
+//      &clkParams
+//  );
+
+  // set up clock to take measurements every 1 millisecond
+  Task_Params taskParams;
+  Task_Params_init(&taskParams);
+  taskParams.stackSize = TASKSTACKSIZE;
+  taskParams.stack = &taskTakeMeasurementStack;
+  taskParams.priority = 2;
+  Task_construct(&taskTakeMeasurementStruct, (Task_FuncPtr)taskTakeMeasurement, &taskParams, NULL);
 }
 
 void make_background_color(uint32_t color) {

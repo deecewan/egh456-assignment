@@ -48,11 +48,11 @@ void MeasurementInit() {
  */
 void TakeMeasurements() {
     // Update recent values being stored
-    Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
+    //Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
     recent_speeds[Ps] = GetMotorSpeed(0.001);
     recent_currents[Pc] = GetCurrentValue();
     recent_temperatures[Pt] = GetTemperature();
-    Semaphore_post(semHandle);
+    //Semaphore_post(semHandle);
 
     // Move to next array element for overwriting value
     ++Ps;
@@ -102,11 +102,11 @@ double GetFilteredSpeed() {
     uint8_t i = 0;
     double sum = 0;
 
-    Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
+    // Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
     for (i = 0; i < 5; i++) {
         sum += recent_speeds[i];
     }
-    Semaphore_post(semHandle);
+    // Semaphore_post(semHandle);
 
     return (sum / 5);
 }
@@ -121,11 +121,11 @@ double GetFilteredTemperature() {
     uint8_t i = 0;
     double sum = 0;
 
-    Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
+    // Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
     for (i = 0; i < 3; i++) {
         sum += recent_temperatures[i];
     }
-    Semaphore_post(semHandle);
+    // Semaphore_post(semHandle);
 
     return (sum / 3);
 }
@@ -140,11 +140,11 @@ double GetFilteredCurrentValue() {
     uint8_t i = 0;
     double sum = 0;
 
-    Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
+    // Semaphore_pend(semHandle, BIOS_WAIT_FOREVER);
     for (i = 0; i < 5; i++) {
         sum += recent_currents[i];
     }
-    Semaphore_post(semHandle);
+    // Semaphore_post(semHandle);
 
     return (sum / 5);
 }
