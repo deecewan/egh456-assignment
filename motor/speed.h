@@ -7,7 +7,8 @@
 int ConnectWithHallSensors();
 double GetMotorSpeed(double seconds);
 void ConnectWithMotor();
-void RunMotor();
+void StartMotor();
+void RotateMotor();
 void SetMotorSpeed(int speed);
 void StopMotor();
 

@@ -22,6 +22,7 @@ int initialise_hardware() {
     StartADCSampling();
     ConnectWithTemperatureSensor();
     ConnectWithMotor();
+    MeasurementInit();
     return ConnectWithHallSensors();
 }
 

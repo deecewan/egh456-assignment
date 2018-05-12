@@ -11,6 +11,7 @@
 #include "drivers/kentec320x240x16_ssd2119.h"
 #include "drivers/frame.h"
 #include "drivers/touch.h"
+#include "utils/ustdlib.h"
 #include "motor/measurement.h"
 #include "motor/speed.h"
 #include "../constants.h"
@@ -21,9 +22,8 @@
 
 #define TASKSTACKSIZE   512
 
-Char taskRedrawLoopStack[TASKSTACKSIZE];
-Task_Struct taskRedrawLoopStruct;
 Clock_Struct clockRuntimeTrackerStruct;
+Clock_Struct clockTakeMeasurementStruct;
 
 MOTOR_STATE last_known_state;
 
@@ -52,27 +52,27 @@ Void idleTask() {
     WidgetMessageQueueProcess();
 }
 
-Void checkWithinLimits() {
-    if (GetFilteredCurrentValue() > get_current_limit()) {
+Void checkWithinLimits(double current, double temp) {
+    if (current > get_current_limit()) {
         // stop
         StopMotor();
-    } else if (GetFilteredTemperature() > get_temp_limit()) {
+    } else if (temp > get_temp_limit()) {
         // stop
         StopMotor();
     }
 }
 
-Void updateMotorState() {
+Void updateMotorState(double speed) {
     switch (get_motor_power()) {
     case ON:
-        if (GetFilteredSpeed() < (get_motor_speed() * 0.9)) {
+        if (speed < (get_motor_speed() * 0.9)) {
             set_motor_state(STARTING);
         } else {
             set_motor_state(RUNNING);
         }
         break;
     case OFF:
-        if (GetFilteredSpeed() > 0) {
+        if (speed > 0) {
             set_motor_state(STOPPING);
         } else {
             set_motor_state(IDLE);
@@ -84,11 +84,28 @@ Void updateMotorState() {
 Void clockRuntimeTracker(UArg arg) {
     increment_run_time();
 
+    if (!ReadingsReady()) {
+        return;
+    }
     appendToMotorSpeed(GetFilteredSpeed());
     appendToCurrent(GetFilteredCurrentValue());
     appendToTemp(GetFilteredTemperature());
 
     update_on_clock_cycle();
+}
+
+Void clockTakeMeasurement(UArg arg) {
+    RotateMotor();
+    TakeMeasurements();
+    if (!ReadingsReady()) {
+        return;
+    }
+    double latest_average_speed = GetFilteredSpeed();
+    double latest_average_current = GetFilteredCurrentValue();
+    double latest_average_temp = GetFilteredTemperature();
+
+    checkWithinLimits(latest_average_current, latest_average_temp);
+    updateMotorState(latest_average_speed);
 }
 
 void ui_setup(uint32_t sysclock, int hardware_status) {
@@ -111,8 +128,30 @@ void ui_setup(uint32_t sysclock, int hardware_status) {
       return;
   }
 
-  // block until we have enough values to check on
-  while (!ReadingsReady());
+
+  // set up clock to track run time
+  Clock_Params clkParams1;
+  Clock_Params_init(&clkParams1);
+  clkParams1.startFlag = TRUE;
+  clkParams1.period = 1000;
+  Clock_construct(
+      &clockRuntimeTrackerStruct,
+      (Clock_FuncPtr)clockRuntimeTracker,
+      1,
+      &clkParams1
+  );
+
+  // set up clock to take measurements every 1 millisecond
+//  Clock_Params clkParams2;
+//  Clock_Params_init(&clkParams2);
+//  clkParams2.startFlag = TRUE;
+//  clkParams2.period = 1;
+//  Clock_construct(
+//      &clockTakeMeasurementStruct,
+//      (Clock_FuncPtr)clockTakeMeasurement,
+//      1,
+//      &clkParams2
+//  );
 
   // Perform all setup functionality **here**
   setup_tabs(); // buttons are setup now
@@ -120,17 +159,6 @@ void ui_setup(uint32_t sysclock, int hardware_status) {
   // perform the first paint of the widgets
   WidgetPaint(WIDGET_ROOT);
 
-  // set up clock to track run time
-  Clock_Params clkParams;
-  Clock_Params_init(&clkParams);
-  clkParams.startFlag = TRUE;
-  clkParams.period = 1000;
-  Clock_construct(
-      &clockRuntimeTrackerStruct,
-      (Clock_FuncPtr)clockRuntimeTracker,
-      1,
-      &clkParams
-  );
 }
 
 void make_background_color(uint32_t color) {

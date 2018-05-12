@@ -87,7 +87,7 @@ void onPress(tWidget *psWidget) {
         fill = ClrRed;
         press_fill = ClrLightSalmon;
         text = "Stop";
-        RunMotor();
+        StartMotor();
         SetMotorSpeed((int)get_motor_speed());
         break;
       case OFF:
