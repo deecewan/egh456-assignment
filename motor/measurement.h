@@ -1,6 +1,9 @@
 #ifndef MOTOR_MEASUREMENT_H_
 #define MOTOR_MEASUREMENT_H_
 
+void StartTakingMeasurements();
+void StopTakingMeasurements();
+bool ReadingsReady();
 double GetFilteredSpeed();
 double GetFilteredTemperature();
 double GetFilteredCurrentValue();
