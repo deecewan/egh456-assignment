@@ -27,7 +27,7 @@ Canvas(boxStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE, COLOR_IDLE, ClrGreen, 0, 0, 0, 0, 0);
 Canvas(textStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  40, 100, 75, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_OUTLINE,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, "Idle", 0, 0);
 Canvas(textRuntime, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  10, 140, 105, 20,
