@@ -7,6 +7,7 @@
 #include <xdc/runtime/System.h>
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
+#include <ti/sysbios/hal/Seconds.h>
 #include <ti/catalog/arm/cortexm4/tiva/ce/sysctl.h>
 #include <inc/hw_memmap.h>
 #include "drivers/pinout.h"
@@ -15,6 +16,8 @@
 #include "motor/temperature.h"
 #include "motor/measurement.h"
 #include "ui/main.h"
+
+#define SECONDS_SINCE_EPOCH (1526136342 + (10 * 60 * 60)) // add 10 hours to account for the TZ difference
 
 int initialise_hardware() {
     // call all hardware setup functions
@@ -42,6 +45,8 @@ Int main()
                                            SYSCTL_CFG_VCO_480), 120000000);
     // Configure the device pins
     PinoutSet();
+
+    Seconds_set(SECONDS_SINCE_EPOCH);
 
     // enable the LED pins to display motor status
     // red pin
