@@ -111,19 +111,19 @@ void draw_chart(tContext *context, uint32_t color, uint32_t *list, uint32_t larg
 void draw_charts(tWidget *psWidget, tContext *context) {
     if (visibility & LINE_MOTOR_SPEED) {
         draw_chart(context, ClrChartreuse, get_motor_speed_list(), get_largest_motor_speed());
-        usprintf(speedString, "Speed: %d rpm", get_largest_motor_speed());
+        usprintf(speedString, "Speed: %u rpm", get_largest_motor_speed());
     } else {
         usprintf(speedString, "Speed");
     }
     if (visibility & LINE_CURRENT) {
         draw_chart(context, ClrCornflowerBlue, get_current_list(), get_largest_current());
-        usprintf(currentString, "Current: %d mA", get_largest_current());
+        usprintf(currentString, "Current: %u mA", get_largest_current());
     } else {
         usprintf(currentString, "Current");
     }
     if (visibility & LINE_TEMP) {
         draw_chart(context, ClrDeepPink, get_temp_list(), get_largest_temp());
-        usprintf(tempString, "Temp: %d C", get_largest_temp());
+        usprintf(tempString, "Temp: %u C", get_largest_temp());
     } else {
         usprintf(tempString, "Temp");
     }
