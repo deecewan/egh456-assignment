@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "constants.h"
 #include "state.h"
+#include "motor/speed.h"
 
 /**
  * Controls whether on not the motor is turned on
@@ -42,6 +43,8 @@ uint32_t get_motor_speed() {
 
 void set_motor_speed(uint32_t speed) {
   motor_speed = speed;
+  // update the speed inside the motor controller
+  SetMotorSpeed(speed);
 }
 
 /**
