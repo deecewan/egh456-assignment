@@ -31,7 +31,7 @@ bool run_motor = false;
 /*
  * Function Prototypes.
  */
-uint8_t ConnectWithHallSensors();
+int ConnectWithHallSensors();
 double GetMotorSpeed(double seconds);
 void ConnectWithMotor();
 void RunMotor();
@@ -42,9 +42,10 @@ static uint8_t GetCurrentHallState();
 /*
  * Initializes connection to read from all three hall sensors and fault lines.
  *
- * Output: Hall sensor readings so that the calling function can check for any faults.
+ * Output: Hall sensor readings that the calling function can check for any
+ * faults (represented by -1).
  */
-uint8_t ConnectWithHallSensors() {
+int ConnectWithHallSensors() {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOP);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -55,7 +56,12 @@ uint8_t ConnectWithHallSensors() {
     GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_5);
     initial_state = GetCurrentHallState();
     checkpoint_state = initial_state;
-    return checkpoint_state;
+
+    if (checkpoint_state >= 0 && checkpoint_state <= 5) {
+        return ((int)checkpoint_state);
+    } else {
+        return -1;
+    }
 }
 
 /*
@@ -186,100 +192,37 @@ void RunMotor() {
 
         switch (current_state) {
             case 0:
-                // PWM + RESET A
-                TimerControlLevel(TIMER3_BASE, TIMER_A, false);
-                TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
-                TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
-
-                // PWM + RESET B
-                //TimerControlLevel(TIMER2_BASE, TIMER_B, true);
-                //TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
-                //TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
-
-                // PWM + RESET C
-                TimerControlLevel(TIMER2_BASE, TIMER_A, false);
-                TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES-1);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
                 break;
             case 1:
                 // PWM + RESET A
-                TimerControlLevel(TIMER3_BASE, TIMER_A, false);
-                TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES - 1);
-
-                // PWM + RESET B
-                //TimerControlLevel(TIMER2_BASE, TIMER_B, true);
-                //TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
-                //TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
-
-                // PWM + RESET C
-                TimerControlLevel(TIMER2_BASE, TIMER_A, false);
-                TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
-                break;
-            case 2:
-                // PWM + RESET A
-                TimerControlLevel(TIMER3_BASE, TIMER_A, false);
-                TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES - 1);
-
-                // PWM + RESET B
-                TimerControlLevel(TIMER2_BASE, TIMER_B, false);
-                TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
-                TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
-
-                // PWM + RESET C
-                //TimerControlLevel(TIMER2_BASE, TIMER_A, true);
-                //TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
-                //TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
-                break;
-            case 3:
-                // PWM + RESET A
-                TimerControlLevel(TIMER3_BASE, TIMER_A, false);
                 TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
                 TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
 
-                // PWM + RESET B
-                TimerControlLevel(TIMER2_BASE, TIMER_B, false);
-                TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES - 1);
-
                 // PWM + RESET C
-                //TimerControlLevel(TIMER2_BASE, TIMER_A, true);
-                //TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
-                //TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
+                TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES-1);
+                TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
                 break;
-            case 4:
+            case 2:
+                break;
+            case 3:
                 // PWM + RESET A
-                //TimerControlLevel(TIMER3_BASE, TIMER_A, true);
-                //TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
-                //TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
+                TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES - 1);
+                TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES - 1);
 
                 // PWM + RESET B
-                TimerControlLevel(TIMER2_BASE, TIMER_A, false);
-                TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES - 1);
-
-                // PWM + RESET C
-                TimerControlLevel(TIMER2_BASE, TIMER_B, false);
-                TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
-                break;
-            case 5:
-                // PWM + RESET A
-                //TimerControlLevel(TIMER3_BASE, TIMER_A, true);
-                //TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
-                //TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
-
-                // PWM + RESET B
-                TimerControlLevel(TIMER2_BASE, TIMER_A, false);
                 TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
                 TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
+                break;
+            case 4:
+                break;
+            case 5:
+                // PWM + RESET B
+                TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES - 1);
+                TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES - 1);
 
                 // PWM + RESET C
-                TimerControlLevel(TIMER2_BASE, TIMER_B, false);
-                TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES - 1);
+                TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
+                TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
                 break;
 
             default: // Motor shouldn't reach here in non-faulty state
@@ -346,5 +289,5 @@ static uint8_t GetCurrentHallState() {
         }
     }
 
-    return 6; // Reading to indicate hardware fault
+    return 100; // reading to indicate hardware fault
 }
