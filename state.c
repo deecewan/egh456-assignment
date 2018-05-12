@@ -109,25 +109,32 @@ void append(uint32_t *list, uint32_t value) {
 }
 
 void appendToMotorSpeed(uint32_t value) {
-    if (value > listMotorSpeedLargest) {
-        listMotorSpeedLargest = value;
-    }
     append(listMotorSpeed, value);
 
+    for (uint8_t i = 1; i < LIST_ITEM_COUNT; i++) {
+        if (listMotorSpeed[i] > listMotorSpeedLargest) {
+            listMotorSpeedLargest = listMotorSpeed[i];
+        }
+    }
 }
 
 void appendToCurrent(uint32_t value) {
-    if (value > listCurrentLargest) {
-        listCurrentLargest = value;
-    }
+    // we need to calculate a new largest every time :(
     append(listCurrent, value);
+    for (uint8_t i = 1; i < LIST_ITEM_COUNT; i++) {
+        if (listCurrent[i] > listCurrentLargest) {
+            listCurrentLargest = listCurrent[i];
+        }
+    }
 }
 
 void appendToTemp(uint32_t value) {
-    if (value > listTempLargest) {
-        listTempLargest = value;
-    }
     append(listTemp, value);
+    for (uint8_t i = 1; i < LIST_ITEM_COUNT; i++) {
+        if (listTemp[i] > listTempLargest) {
+            listTempLargest = listTemp[i];
+        }
+    }
 }
 
 uint32_t *get_motor_speed_list() {
