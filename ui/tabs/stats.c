@@ -5,6 +5,7 @@
 #include <grlib/canvas.h>
 #include <grlib/pushbutton.h>
 #include "drivers/kentec320x240x16_ssd2119.h"
+#include "utils/ustdlib.h"
 #include "../tabs.h"
 #include "../state.h"
 #include "stats.h"
@@ -21,20 +22,24 @@ void toggle_visibility(VISIBILITY vis) {
     visibility ^= vis;
 }
 
+char speedString[20] = "Speed";
+char currentString[20] = "Current";
+char tempString[20] = "Temp";
+
 RectangularButton(legendMotorSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
   10, 240 - 24 - 8 - 30, 100, 16,
   PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrChartreuse, ClrChartreuse, 0, ClrBlack,
-  g_psFontCmss16, "Motor Speed", 0, 0, 0, 0, toggle_vis_motor_speed);
+  g_psFontCmss16, speedString, 0, 0, 0, 0, toggle_vis_motor_speed);
 
 RectangularButton(legendCurrent, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
   110, 240 - 24 - 8 - 30, 100, 16,
   PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrCornflowerBlue, ClrCornflowerBlue, 0, ClrBlack,
-  g_psFontCmss16, "Current", 0, 0, 0, 0, toggle_vis_current);
+  g_psFontCmss16, currentString, 0, 0, 0, 0, toggle_vis_current);
 
 RectangularButton(legendTemp, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
   210, 240 - 24 - 8 - 30, 100, 16,
   PB_STYLE_TEXT | PB_STYLE_FILL | PB_STYLE_RELEASE_NOTIFY, ClrDeepPink, ClrDeepPink, 0, ClrBlack,
-  g_psFontCmss16, "Temperature", 0, 0, 0, 0, toggle_vis_temp);
+  g_psFontCmss16, tempString, 0, 0, 0, 0, toggle_vis_temp);
 
 Canvas(graphArea, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
        11, 28, 299, 145, CANVAS_STYLE_APP_DRAWN | CANVAS_STYLE_FILL,
@@ -106,13 +111,25 @@ void draw_chart(tContext *context, uint32_t color, uint32_t *list, uint32_t larg
 void draw_charts(tWidget *psWidget, tContext *context) {
     if (visibility & LINE_MOTOR_SPEED) {
         draw_chart(context, ClrChartreuse, get_motor_speed_list(), get_largest_motor_speed());
+        usprintf(speedString, "Speed: %d rpm", get_largest_motor_speed());
+    } else {
+        usprintf(speedString, "Speed");
     }
     if (visibility & LINE_CURRENT) {
         draw_chart(context, ClrCornflowerBlue, get_current_list(), get_largest_current());
+        usprintf(currentString, "Current: %d mA", get_largest_current());
+    } else {
+        usprintf(currentString, "Current");
     }
     if (visibility & LINE_TEMP) {
         draw_chart(context, ClrDeepPink, get_temp_list(), get_largest_temp());
+        usprintf(tempString, "Temp: %d C", get_largest_temp());
+    } else {
+        usprintf(tempString, "Temp");
     }
+    WidgetPaint((tWidget *)&legendMotorSpeed);
+    WidgetPaint((tWidget *)&legendTemp);
+    WidgetPaint((tWidget *)&legendCurrent);
 }
 
 void stats_redrawGraphs() {
