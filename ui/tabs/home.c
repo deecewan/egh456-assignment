@@ -27,31 +27,31 @@ Canvas(boxStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE, COLOR_IDLE, ClrGreen, 0, 0, 0, 0, 0);
 Canvas(textStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  40, 100, 75, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, "Idle", 0, 0);
 Canvas(textRuntime, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  10, 140, 105, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, "Time: ", 0, 0);
 char runtime[20] = "0s";
 Canvas(textRuntimeValue, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  60, 140, 105, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, runtime, 0, 0);
 static char motorSpeed[22] = "Motor Speed: 0 rpm"; // allows up to 5 digits
 Canvas(textMotorSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  160, 100, 150, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, motorSpeed, 0, 0);
 static char currentLimit[24] = "Current Limit: 0 mA"; // allows up to 5 digits
 Canvas(textCurrentLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  160, 130, 150, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, currentLimit, 0, 0);
 static char tempLimit[16] = "Temp Limit: 0 C"; // allows up to 3 digits
 Canvas(textTempLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  160, 160, 150, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, tempLimit, 0, 0);
 
 void paint_home(tWidget *psWidget, tContext *psContext) {
