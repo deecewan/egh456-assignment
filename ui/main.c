@@ -84,12 +84,12 @@ Void updateMotorState(double speed) {
 Void clockRuntimeTracker(UArg arg) {
     increment_run_time();
 
-    if (!ReadingsReady()) {
-        return;
-    }
-    appendToMotorSpeed(GetFilteredSpeed());
-    appendToCurrent(GetFilteredCurrentValue());
-    appendToTemp(GetFilteredTemperature());
+//    if (!ReadingsReady()) {
+//        return;
+//    }
+//    appendToMotorSpeed(GetFilteredSpeed());
+//    appendToCurrent(GetFilteredCurrentValue());
+//    appendToTemp(GetFilteredTemperature());
 
     update_on_clock_cycle();
 }
@@ -123,22 +123,21 @@ void ui_setup(uint32_t sysclock, int hardware_status) {
   // Draw the application frame
   FrameDraw(&g_sContext, "Group 10 Motor Controller");
   if (hardware_status == -1) {
-      GrStringDraw(&g_sContext, "Invalid initial Hall Sensor reading", 36, 0, 0, 1);
-      GrStringDraw(&g_sContext, "Move motor and restart program", 36, 0, 30, 1);
+      GrStringDraw(&g_sContext, "Invalid initial Hall Sensor reading", 36, 30, 0, 1);
+      GrStringDraw(&g_sContext, "Move motor and restart program", 31, 0, 60, 1);
       return;
   }
 
-
   // set up clock to track run time
-  Clock_Params clkParams1;
-  Clock_Params_init(&clkParams1);
-  clkParams1.startFlag = TRUE;
-  clkParams1.period = 1000;
+  Clock_Params clkParams;
+  Clock_Params_init(&clkParams);
+  clkParams.startFlag = TRUE;
+  clkParams.period = 1000;
   Clock_construct(
       &clockRuntimeTrackerStruct,
       (Clock_FuncPtr)clockRuntimeTracker,
       1,
-      &clkParams1
+      &clkParams
   );
 
   // set up clock to take measurements every 1 millisecond
