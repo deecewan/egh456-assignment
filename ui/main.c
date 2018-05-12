@@ -99,7 +99,6 @@ Void clockRuntimeTracker(UArg arg) {
     checkWithinLimits(latest_average_current, latest_average_temp);
     updateMotorState(latest_average_speed);
 
-
     if (counter == 200) {
         increment_run_time();
         appendToMotorSpeed(latest_average_speed);
