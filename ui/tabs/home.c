@@ -62,6 +62,11 @@ Canvas(textTempLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, tempLimit, 0, 0);
 
+// this function deals with updating the calendar time to be displayed
+// currently, we are displaying nothing, because `localtime` is crashing
+// when called from the context of a Hwi/Swi/Task/etc.
+// if I manage to fix this, we can show this, too. We are currently just showing
+// runtime.
 void updateDateDisplay() {
     time_t t;
     struct tm *ltm;

@@ -89,6 +89,12 @@ Void clockRuntimeTracker(UArg arg) {
     RotateMotor();
     TakeMeasurements();
 
+    // we need to be able to GET in here if the motor has had a fault
+    // and turned itself off. If this happens, we need to call
+//    set_motor_power(OFF);
+//    set_motor_state(IDLE);
+    // which will allow the UI to reflect that the motor has stopped
+
     if (!ReadingsReady()) {
         return;
     }
@@ -99,6 +105,7 @@ Void clockRuntimeTracker(UArg arg) {
     checkWithinLimits(latest_average_current, latest_average_temp);
     updateMotorState(latest_average_speed);
     updateStartStopButton();
+
 
     if (counter == 1000) {
         increment_run_time();
