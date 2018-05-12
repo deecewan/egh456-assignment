@@ -268,7 +268,8 @@ void SetMotorSpeed(int speed) {
  * Brings the motor to a stopping and when the speed is low enough, stops the motor itself.
  */
 void StopMotor() {
-    SetMotorSpeed(0);
+    // SetMotorSpeed(0);
+    duty_cycle = 0;
     while(current_speed > 0);
     run_motor = false;
 }

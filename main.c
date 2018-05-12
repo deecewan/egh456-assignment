@@ -10,7 +10,20 @@
 #include <ti/catalog/arm/cortexm4/tiva/ce/sysctl.h>
 #include <inc/hw_memmap.h>
 #include "drivers/pinout.h"
+#include "motor/current.h"
+#include "motor/speed.h"
+#include "motor/temperature.h"
+#include "motor/measurement.h"
 #include "ui/main.h"
+
+int initialise_hardware() {
+    // call all hardware setup functions
+    // if any return -1, we are in a faulty state
+    StartADCSampling();
+    ConnectWithTemperatureSensor();
+    ConnectWithMotor();
+    return ConnectWithHallSensors();
+}
 
 /*
  *  ======== main ========
@@ -35,7 +48,7 @@ Int main()
     // green pin
     ROM_GPIOPinTypeGPIOOutput(GPIO_PORTQ_BASE, GPIO_PIN_7);
 
-    ui_setup(ui32SysClock);
+    ui_setup(ui32SysClock, initialise_hardware());
 
     BIOS_start();    /* does not return */
     return(0);

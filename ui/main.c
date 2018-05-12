@@ -11,6 +11,8 @@
 #include "drivers/kentec320x240x16_ssd2119.h"
 #include "drivers/frame.h"
 #include "drivers/touch.h"
+#include "motor/measurement.h"
+#include "motor/speed.h"
 #include "../constants.h"
 #include "../state.h"
 #include "tabs.h"
@@ -50,17 +52,46 @@ Void idleTask() {
     WidgetMessageQueueProcess();
 }
 
+Void checkWithinLimits() {
+    if (GetFilteredCurrentValue() > get_current_limit()) {
+        // stop
+        StopMotor();
+    } else if (GetFilteredTemperature() > get_temp_limit()) {
+        // stop
+        StopMotor();
+    }
+}
+
+Void updateMotorState() {
+    switch (get_motor_power()) {
+    case ON:
+        if (GetFilteredSpeed() < (get_motor_speed() * 0.9)) {
+            set_motor_state(STARTING);
+        } else {
+            set_motor_state(RUNNING);
+        }
+        break;
+    case OFF:
+        if (GetFilteredSpeed() > 0) {
+            set_motor_state(STOPPING);
+        } else {
+            set_motor_state(IDLE);
+        }
+        break;
+    }
+}
+
 Void clockRuntimeTracker(UArg arg) {
     increment_run_time();
 
-    appendToMotorSpeed(urand());
-    appendToCurrent(urand());
-    appendToTemp(urand());
+    appendToMotorSpeed(GetFilteredSpeed());
+    appendToCurrent(GetFilteredCurrentValue());
+    appendToTemp(GetFilteredTemperature());
 
     update_on_clock_cycle();
 }
 
-void ui_setup(uint32_t sysclock) {
+void ui_setup(uint32_t sysclock, int hardware_status) {
   usrand(sysclock);
   // Init the display driver
   Kentec320x240x16_SSD2119Init(sysclock);
@@ -74,6 +105,14 @@ void ui_setup(uint32_t sysclock) {
 
   // Draw the application frame
   FrameDraw(&g_sContext, "Group 10 Motor Controller");
+  if (hardware_status == -1) {
+      GrStringDraw(&g_sContext, "Invalid initial Hall Sensor reading", 36, 0, 0, 1);
+      GrStringDraw(&g_sContext, "Move motor and restart program", 36, 0, 30, 1);
+      return;
+  }
+
+  // block until we have enough values to check on
+  while (!ReadingsReady());
 
   // Perform all setup functionality **here**
   setup_tabs(); // buttons are setup now
