@@ -8,37 +8,45 @@
 #include <inc/hw_memmap.h>
 #include <xdc/runtime/System.h>
 
+/*
+ * Module constants.
+ */
 #define NUM_STATES 6
-#define SECONDS_IN_MINUTE 60
-#define MAX_SPEED 6000 // Max speed at which present motor can spin in revolutions per minute (RPM)
+#define MILLISECONDS_IN_MINUTE 6000
+#define MAX_SPEED 5000 // Max speed at which present motor can spin in revolutions per minute (RPM)
 #define T_CPU_CLOCK_SPEED 120000000
 #define SAMPLING_FREQUENCY 500000 // Fixed PWM frequency at which motor performs best
-/*
-#define MOTOR_VREF 3.3
-#define FAULT_VOLTS MOTOR_VREF // 11 indicates everything is normal, 00 shutdown, all else is warning
-#define MAX_PWM_V 3.6
-#define MIN_PWM_V 2.0
-*/
+#define MAX_DUTY 0.5
 
 static const uint8_t HALL_SENSOR_STATES[NUM_STATES] = {1, 101, 100, 110, 10, 11};
 static const uint16_t TIMER_CYCLES = T_CPU_CLOCK_SPEED / SAMPLING_FREQUENCY;
 
-int dummy = 0;
-static uint8_t checkpoint_state, initial_state;
+/*
+ * Module variables.
+ */
+static uint8_t current_state, checkpoint_state;
+static uint16_t match_point;
+static int milliseconds = 0;
 static double current_speed = 0, desired_speed = 0, duty_cycle = 0, error_sum = 0;
-static double Kp = 0, Ki = 0; // Will be determined through trial and error
-bool run_motor = false;
+static double Kp = 0, Ki = 0, revolutions = 0; // Kp and Ki be determined through trial and error
+static bool run_motor = false, faulty_motor = false;
 
 /*
  * Function Prototypes.
  */
 int ConnectWithHallSensors();
-double GetMotorSpeed(double seconds);
 void ConnectWithMotor();
-void RunMotor();
+void StartMotor();
+bool IsMotorFaulty();
+void RotateMotor();
+double GetMotorSpeed();
 void SetMotorSpeed(int speed);
 void StopMotor();
+static void CheckForFaultSignal();
 static uint8_t GetCurrentHallState();
+static void AddToCurrentRevolutions();
+static void PIControl();
+static void FeedbackControl();
 
 /*
  * Initializes connection to read from all three hall sensors and fault lines.
@@ -55,45 +63,14 @@ int ConnectWithHallSensors() {
     GPIOPinTypeGPIOInput(GPIO_PORTL_BASE, GPIO_PIN_3);
     GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_4);
     GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_5);
-    initial_state = GetCurrentHallState();
-    checkpoint_state = initial_state;
+    current_state = GetCurrentHallState();
+    checkpoint_state = current_state;
 
     if (checkpoint_state >= 0 && checkpoint_state <= 5) {
         return ((int)checkpoint_state);
     } else {
         return -1;
     }
-}
-
-/*
- * Measures distance traveled from previous reference point to calculate motor
- * speed in revolutions per minute (RPM).
- *
- * Inputs: Time intervals at which this function is being called.
- *
- * Outputs: one of seven possible motor speeds in revolutions per minute format.
- *
- * Assumption: Only one rotation could have happened at most since this function
- * was last called.
- */
-double GetMotorSpeed(double seconds) {
-    int difference;
-    double current_speed = 0;
-    uint8_t current_state = 6;
-
-    current_state = GetCurrentHallState();
-    if (current_state == 6) {
-        return -1;
-    }
-
-    difference = checkpoint_state - current_state;
-    if (difference < 0) {
-        difference += NUM_STATES;
-    }
-
-    current_speed = (difference / ((double)NUM_STATES)) * (SECONDS_IN_MINUTE / seconds);
-    checkpoint_state = current_state;
-    return current_speed;
 }
 
 /*
@@ -118,12 +95,9 @@ void ConnectWithMotor() {
     GPIOPinConfigure(GPIO_PA7_T3CCP1);
     GPIOPinConfigure(GPIO_PL4_T0CCP0);
     GPIOPinConfigure(GPIO_PL5_T0CCP1);
-    GPIOPinTypeTimer(GPIO_PORTM_BASE, GPIO_PIN_0);
-    GPIOPinTypeTimer(GPIO_PORTM_BASE, GPIO_PIN_1);
-    GPIOPinTypeTimer(GPIO_PORTM_BASE, GPIO_PIN_2);
+    GPIOPinTypeTimer(GPIO_PORTM_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2);
     GPIOPinTypeTimer(GPIO_PORTA_BASE, GPIO_PIN_7);
-    GPIOPinTypeTimer(GPIO_PORTL_BASE, GPIO_PIN_4);
-    GPIOPinTypeTimer(GPIO_PORTL_BASE, GPIO_PIN_5);
+    GPIOPinTypeTimer(GPIO_PORTL_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
     // Configure timers to send PWM wave later on
     TimerDisable(TIMER0_BASE, TIMER_BOTH);
@@ -140,9 +114,9 @@ void ConnectWithMotor() {
     TimerMatchSet(TIMER3_BASE, TIMER_BOTH, TIMER_CYCLES - 1);
 }
 
-static uint8_t current_state;
-static uint16_t match_point;
-
+/*
+ * Initialises and enables all the connections needed to start the motor.
+ */
 void StartMotor() {
     ConnectWithHallSensors();
     ConnectWithMotor();
@@ -154,6 +128,18 @@ void StartMotor() {
     run_motor = true;
 }
 
+/*
+ * Returns whether the motor is in a faulty state or not.
+ */
+bool IsMotorFaulty() {
+    return faulty_motor;
+}
+
+/*
+ * Changes PWM cycle sent to motor depending upon current hall sensor reading of motor.
+ *
+ * Assumption: StartMotor() has been called before this function.
+ */
 void RotateMotor() {
     if (!run_motor) {
         return;
@@ -161,160 +147,27 @@ void RotateMotor() {
 
     TimerSynchronize(TIMER0_BASE, (TIMER_0A_SYNC | TIMER_0B_SYNC | TIMER_2A_SYNC | TIMER_2B_SYNC | TIMER_3A_SYNC | TIMER_3B_SYNC));
     match_point = ((uint16_t)(TIMER_CYCLES - (duty_cycle * TIMER_CYCLES)));
-
-    switch (current_state) {
-        case 0:
-            dummy = 1;
-            break;
-        case 1:
-            // PWM + RESET A
-            TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
-            TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
-
-            // PWM + RESET C
-            TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES-1);
-            TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
-            break;
-        case 2:
-            dummy = 1;
-            break;
-        case 3:
-            // PWM + RESET A
-            TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES - 1);
-            TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES - 1);
-
-            // PWM + RESET B
-            TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
-            TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
-            break;
-        case 4:
-            dummy = 1;
-            break;
-        case 5:
-            // PWM + RESET B
-            TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES - 1);
-            TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES - 1);
-
-            // PWM + RESET C
-            TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
-            TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
-            break;
-
-        default: // Motor shouldn't reach here in non-faulty state
-            //StopMotor();
-            break;
-    }
-
+    FeedbackControl();
+    CheckForFaultSignal();
     current_state = GetCurrentHallState();
-    System_printf("%d\n", current_state);
-    // System_flush();
 
-    duty_cycle = duty_cycle + 0.0000001;
-    if (duty_cycle >= 0.97) { // Have a 100ns PWM pulse as specified in datasheet
-        duty_cycle = 0.97;
+    ++milliseconds;
+    if (milliseconds >= 500) {
+        current_speed = (MILLISECONDS_IN_MINUTE / milliseconds) * revolutions;
+        revolutions = 0;
+        milliseconds = 0;
+    } else {
+        AddToCurrentRevolutions();
     }
+
+    duty_cycle = duty_cycle + 0.000001;
 }
 
 /*
- * Starts and maintains the motion of the motor with a default starting speed.
+ * Returns the currently recorded speed for the motor.
  */
-void RunMotor() {
-    uint8_t current_state = initial_state;
-    uint16_t match_point = TIMER_CYCLES-1;
-    duty_cycle = 0.1;
-    run_motor = true;
-
-    ConnectWithHallSensors();
-    ConnectWithMotor();
-    TimerEnable(TIMER0_BASE, TIMER_BOTH);
-    TimerEnable(TIMER2_BASE, TIMER_BOTH);
-    TimerEnable(TIMER3_BASE, TIMER_BOTH);
-
-    // To avoid scrolling anywhere else:
-    // HALL_SENSOR_STATES[NUM_STATES] = {001, 101, 100, 110, 010, 011};
-    // 3A = PWM_A, 2B = PWM_B = 2A = PWM_C
-    // 3B = RESET_A, 0B = RESET_B, 0A = RESET_C
-    while (run_motor) {
-        // Keeps PWM waves in intended order
-        TimerSynchronize(TIMER0_BASE, (TIMER_0A_SYNC | TIMER_0B_SYNC | TIMER_2A_SYNC | TIMER_2B_SYNC | TIMER_3A_SYNC | TIMER_3B_SYNC));
-        match_point = ((uint16_t)(TIMER_CYCLES - (duty_cycle * TIMER_CYCLES)));
-/*
-        switch (current_state) {
-            case 0:
-                TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES - 1);
-                break;
-            case 1:
-                TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
-                TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
-                break;
-            case 2:
-                TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES - 1);
-                break;
-            case 3:
-                TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
-                break;
-            case 4:
-                TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES - 1);
-                break;
-            case 5:
-                TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
-                TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
-                break;
-*/
-
-        switch (current_state) {
-            case 0:
-                break;
-            case 1:
-                // PWM + RESET A
-                TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
-                TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
-
-                // PWM + RESET C
-                TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES-1);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
-                break;
-            case 2:
-                break;
-            case 3:
-                // PWM + RESET A
-                TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES - 1);
-
-                // PWM + RESET B
-                TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
-                TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
-                break;
-            case 4:
-                break;
-            case 5:
-                // PWM + RESET B
-                TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES - 1);
-                TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES - 1);
-
-                // PWM + RESET C
-                TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
-                TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
-                break;
-
-            default: // Motor shouldn't reach here in non-faulty state
-                //StopMotor();
-                break;
-        }
-
-        current_state = GetCurrentHallState();
-        System_printf("%d\n", current_state);
-        // System_flush();
-
-        //duty_cycle = duty_cycle + 0.001;
-        if (duty_cycle >= 0.97) { // Have a 100ns PWM pulse as specified in datasheet
-            duty_cycle = 0.97;
-        }
-    }
+double GetMotorSpeed() {
+    return current_speed;
 }
 
 /*
@@ -323,31 +176,41 @@ void RunMotor() {
  * desired speed.
  */
 void SetMotorSpeed(int speed) {
-    double error = 0;
-
     // User input error handling for unsupported speed demands
     if (speed < 0) {
-        return;
-    } else if (speed >= MAX_SPEED) {
+        return; // This is because the UI doesn't let me select speeds other than 0, WILL CHANGE IT TO duty_cycle = 0
+    } else if(speed >= MAX_SPEED) {
         desired_speed = MAX_SPEED;
     } else {
         desired_speed = speed;
     }
-
-    // Use PI feedback controller to modify speed as suggested in week 7 lecture
-    error = desired_speed - current_speed;
-    error_sum += error;
-    duty_cycle += (Kp * error + Ki * error_sum);
 }
 
 /*
- * Brings the motor to a stopping and when the speed is low enough, stops the motor itself.
+ * Brings the motor to a stopping state and when the speed is low enough, stops the motor itself.
  */
 void StopMotor() {
-    // SetMotorSpeed(0);
-    duty_cycle = 0;
-    while(current_speed > 0);
+    //SetMotorSpeed(0);
+    current_speed = 0;
+    //while(1);
     run_motor = false;
+    TimerDisable(TIMER0_BASE, TIMER_BOTH);
+    TimerDisable(TIMER2_BASE, TIMER_BOTH);
+    TimerDisable(TIMER3_BASE, TIMER_BOTH);
+}
+
+/*
+ * Keeps checking whether the motor has sent a overheating or excess current fault reading.
+ */
+static void CheckForFaultSignal() {
+    uint8_t f1, f2, sum;
+    f1 = (GPIOPinRead(GPIO_PORTC_BASE, GPIO_PIN_6) >> 6) & 1;
+    f2 = (GPIOPinRead(GPIO_PORTL_BASE, GPIO_PIN_2) >> 2) & 1;
+    sum = f1 + f2;
+
+    if (sum == 0) {
+        faulty_motor = true;
+    }
 }
 
 /*
@@ -366,5 +229,129 @@ static uint8_t GetCurrentHallState() {
         }
     }
 
+    faulty_motor = true;
     return 100; // reading to indicate hardware fault
 }
+
+/*
+ * Measures distance traveled from previous reference point to help calculate motor
+ * speed in revolutions per minute (RPM).
+ *
+ * Assumption: At most one rotation could have happened since this function was
+ * last called.
+ */
+static void AddToCurrentRevolutions() {
+    int difference = checkpoint_state - current_state;
+    if (difference < 0) { // measurable change in states can only be from 0 to 5
+        difference += NUM_STATES;
+    }
+
+    revolutions += (difference / ((double)NUM_STATES));
+    checkpoint_state = current_state;
+}
+
+/*
+ * Accelerates or decelerates the motor by a safe margin (using a PI controller as suggested in
+ * week 7 lecture) to get it to go to a desirable speed.
+ */
+static void PIControl() {
+    double error = 0;
+    error = desired_speed - current_speed;
+    error_sum += error;
+    duty_cycle += (Kp * error + Ki * error_sum);
+
+    if (duty_cycle >= MAX_DUTY) { // Have a 100ns PWM pulse as specified in datasheet
+        duty_cycle = MAX_DUTY;
+    }
+}
+
+/*
+ * Helper function to change the PWM waves sent to motor depending upon current
+ * hall sensor position of motor.
+ */
+static void FeedbackControl() {
+    switch (current_state) {
+        case 0: // H1, H2, H3 = 0, 0, 1
+            // PWM + RESET A
+            TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
+            TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
+
+            // PWM + RESET B
+            TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET C
+            TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
+            TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
+            break;
+        case 1: // H1, H2, H3 = 1, 0, 1
+            // PWM + RESET A
+            TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
+            TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET B
+            TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET C
+            TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
+            break;
+        case 2: // H1, H2, H3 = 1, 0, 0
+            // PWM + RESET A
+            TimerMatchSet(TIMER3_BASE, TIMER_A, match_point);
+            TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET B
+            TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
+            TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
+
+            // PWM + RESET C
+            TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
+            break;
+        case 3: // H1, H2, H3 = 1, 1, 0
+            // PWM + RESET A
+            TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER3_BASE, TIMER_B, 0);
+
+            // PWM + RESET B
+            TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
+            TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET C
+            TimerMatchSet(TIMER2_BASE, TIMER_A, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
+            break;
+        case 4: // H1, H2, H3 = 0, 1, 0
+            // PWM + RESET A
+            TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET B
+            TimerMatchSet(TIMER2_BASE, TIMER_B, match_point);
+            TimerMatchSet(TIMER0_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET C
+            TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
+            TimerMatchSet(TIMER0_BASE, TIMER_A, 0);
+            break;
+        case 5: // H1, H2, H3 = 0, 1, 1
+            // PWM + RESET A
+            TimerMatchSet(TIMER3_BASE, TIMER_A, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER3_BASE, TIMER_B, TIMER_CYCLES-1);
+
+            // PWM + RESET B
+            TimerMatchSet(TIMER2_BASE, TIMER_B, TIMER_CYCLES-1);
+            TimerMatchSet(TIMER0_BASE, TIMER_B, 0);
+
+            // PWM + RESET C
+            TimerMatchSet(TIMER2_BASE, TIMER_A, match_point);
+            TimerMatchSet(TIMER0_BASE, TIMER_A, TIMER_CYCLES-1);
+            break;
+        default: // Motor shouldn't reach here in non-faulty state
+            faulty_motor = true;
+            break;
+    }
+}
+
