@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "stdbool.h"
+#include <stdbool.h>
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Semaphore.h>
 #include "speed.h"
@@ -14,21 +14,37 @@
 #define CURRENT_SAMPLES 5
 #define TEMPERATURE_SAMPLES 3
 
+void MeasurementInit();
 void TakeMeasurements();
 void MeasureTemperature();
-bool ReadingsReady();
 double GetFilteredSpeed();
 double GetFilteredTemperature();
 double GetFilteredCurrentValue();
 
 static uint8_t Ps = 0, Pt = 0, Pc = 0; // keep track of the next value to be modified
-static bool currents_ready = false, speeds_ready = false, temperatures_ready = false;
-static double recent_speeds[SPEED_SAMPLES] = {0, 0, 0, 0, 0};
-static double recent_temperatures[TEMPERATURE_SAMPLES] = {0, 0, 0};
-static double recent_currents[CURRENT_SAMPLES] = {0, 0, 0, 0, 0};
+static int measurement_counter = 0;
+static double recent_speeds[SPEED_SAMPLES];
+static double recent_temperatures[TEMPERATURE_SAMPLES];
+static double recent_currents[CURRENT_SAMPLES];
 
 // NOTE: TIMERS 0, 2 and 3 ARE BEING USED AS PWM OUTPUTS.
 // HENCE, DO NOT USE THEM AT ALL FOR FILTERING HERE.
+
+void MeasurementInit() {
+    int i = 0;
+
+    for (i = 0; i < SPEED_SAMPLES; i++) {
+        recent_speeds[i] = 0;
+    }
+
+    for (i = 0; i < CURRENT_SAMPLES; i++) {
+        recent_currents[i] = 0;
+    }
+
+    for (i = 0; i < TEMPERATURE_SAMPLES; i++) {
+        recent_temperatures[i] = 0;
+    }
+}
 
 /*
  *  Starts the process of sampling motor current and speed readings.
@@ -45,33 +61,21 @@ void TakeMeasurements() {
 
     // Ensure pointer value moves back to start of array once it reaches end
     if (Ps > SPEED_SAMPLES-1) {
-        speeds_ready = true; // 5 samples have been taken so speeds are ready to be plotted
         Ps = 0;
     }
 
     if (Pc > CURRENT_SAMPLES-1) {
-        currents_ready = true; // 5 samples have been taken so currents are ready to be plotted
         Pc = 0;
     }
 }
 
-/*
- *  Starts the process of sampling motor temperature readings.
- */
 void MeasureTemperature() {
+    recent_temperatures[Pt] = GetTemperature();
     ++Pt;
-    recent_temperatures[Pc] = GetCurrentValue();
+
     if (Pt > TEMPERATURE_SAMPLES-1) {
-        temperatures_ready = true;
         Pt = 0;
     }
-}
-
-/*
- * Signals whether enough initial readings have been taken for graphs to be plotted.
- */
-bool ReadingsReady() {
-    return (speeds_ready && temperatures_ready && currents_ready);
 }
 
 /*

@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "stdbool.h"
+#include <stdbool.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/pin_map.h>
 #include <driverlib/gpio.h>
@@ -7,16 +7,20 @@
 #include <driverlib/pwm.h>
 #include <inc/hw_memmap.h>
 #include <xdc/runtime/System.h>
+#include "motor/measurement.h"
 
 /*
  * Module constants.
  */
 #define NUM_STATES 6
 #define MILLISECONDS_IN_MINUTE 6000
-#define MAX_SPEED 5000 // Max speed at which present motor can spin in revolutions per minute (RPM)
+#define MAX_SPEED 1000 // Max speed at which present motor can spin in revolutions per minute (RPM), determined through trial and error
 #define T_CPU_CLOCK_SPEED 120000000
 #define SAMPLING_FREQUENCY 500000 // Fixed PWM frequency at which motor performs best
-#define MAX_DUTY 0.5
+#define MAX_DUTY 0.95
+#define MAX_INCREMENT 0.00001
+#define CHECK_INTERVAL 500
+#define MAX_ERROR_SUM 10000
 
 static const uint8_t HALL_SENSOR_STATES[NUM_STATES] = {1, 101, 100, 110, 10, 11};
 static const uint16_t TIMER_CYCLES = T_CPU_CLOCK_SPEED / SAMPLING_FREQUENCY;
@@ -28,7 +32,7 @@ static uint8_t current_state, checkpoint_state;
 static uint16_t match_point;
 static int milliseconds = 0;
 static double current_speed = 0, desired_speed = 0, duty_cycle = 0, error_sum = 0;
-static double Kp = 0, Ki = 0, revolutions = 0; // Kp and Ki be determined through trial and error
+static double Kp = MAX_INCREMENT/100, Ki = MAX_INCREMENT/MAX_ERROR_SUM, revolutions = 0; // Kp and Ki be determined through trial and error
 static bool run_motor = false, faulty_motor = false;
 
 /*
@@ -124,7 +128,7 @@ void StartMotor() {
     TimerEnable(TIMER2_BASE, TIMER_BOTH);
     TimerEnable(TIMER3_BASE, TIMER_BOTH);
     match_point = TIMER_CYCLES-1;
-    duty_cycle = 0.1;
+    duty_cycle = 0;
     run_motor = true;
 }
 
@@ -144,7 +148,7 @@ void RotateMotor() {
     if (!run_motor) {
         return;
     }
-
+    SetMotorSpeed(300);
     TimerSynchronize(TIMER0_BASE, (TIMER_0A_SYNC | TIMER_0B_SYNC | TIMER_2A_SYNC | TIMER_2B_SYNC | TIMER_3A_SYNC | TIMER_3B_SYNC));
     match_point = ((uint16_t)(TIMER_CYCLES - (duty_cycle * TIMER_CYCLES)));
     FeedbackControl();
@@ -152,7 +156,7 @@ void RotateMotor() {
     current_state = GetCurrentHallState();
 
     ++milliseconds;
-    if (milliseconds >= 500) {
+    if (milliseconds >= CHECK_INTERVAL) {
         current_speed = (MILLISECONDS_IN_MINUTE / milliseconds) * revolutions;
         revolutions = 0;
         milliseconds = 0;
@@ -160,7 +164,7 @@ void RotateMotor() {
         AddToCurrentRevolutions();
     }
 
-    duty_cycle = duty_cycle + 0.000001;
+    PIControl();
 }
 
 /*
@@ -192,7 +196,6 @@ void SetMotorSpeed(int speed) {
 void StopMotor() {
     //SetMotorSpeed(0);
     current_speed = 0;
-    //while(1);
     run_motor = false;
     TimerDisable(TIMER0_BASE, TIMER_BOTH);
     TimerDisable(TIMER2_BASE, TIMER_BOTH);
@@ -255,11 +258,25 @@ static void AddToCurrentRevolutions() {
  * week 7 lecture) to get it to go to a desirable speed.
  */
 static void PIControl() {
-    double error = 0;
-    error = desired_speed - current_speed;
+    double error = 0, duty_inc = 0;
+    error = desired_speed - GetFilteredSpeed();
     error_sum += error;
-    duty_cycle += (Kp * error + Ki * error_sum);
+    duty_inc = (Kp*error + Ki*error_sum);
 
+    // Ensure error sum is a reasonable value
+    if (error_sum >= MAX_ERROR_SUM) {
+        error_sum = MAX_ERROR_SUM;
+    }
+
+    // Ensure acceleration or deceleration doesn't get out of hand
+    if (duty_inc >= MAX_INCREMENT) {
+        duty_inc = MAX_INCREMENT;
+    } else if (duty_inc <= -1*MAX_INCREMENT) {
+        duty_inc = -1*MAX_INCREMENT;
+    }
+
+    duty_cycle += duty_inc;
+    // Ensure max speed doesn't get out of control
     if (duty_cycle >= MAX_DUTY) { // Have a 100ns PWM pulse as specified in datasheet
         duty_cycle = MAX_DUTY;
     }

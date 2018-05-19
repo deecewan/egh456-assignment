@@ -1,11 +1,13 @@
 #include <stdint.h>
 #include <math.h>
-#include "stdbool.h"
+#include <stdbool.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/pin_map.h>
 #include <driverlib/gpio.h>
 #include <driverlib/i2c.h>
+#include <ti/drivers/I2C.h>
 #include <inc/hw_memmap.h>
+//#include "Board.h"
 
 #define T_SLAVE_ADDRESS 0x3A // page 15 of MLX90632 datasheet
 #define CALCULATION_ITERATIONS 3 // page 22 of MLX90632 datasheet
@@ -14,26 +16,28 @@
 #define TA_O 25
 #define TO_O 25
 
-static int16_t Gb, Ka, Ha, Hb;
-static int32_t Ea, Eb, Fa, Fb, Ga, Pr, Po, Pg, Pt;
+static double Gb, Ka, Ha, Hb;
+static double Ea, Eb, Fa, Fb, Ga, Pr, Po, Pg, Pt;
+static double temperature_C = 25; // Recommended initial value in page 22 of MLX90632 datasheet
 
 /*
  * Function Prototypes
  */
 void ConnectWithTemperatureSensor();
+int* ReturnSamples();
 double GetTemperature();
 static void InitialiseCalibrationConstants();
 static double CalculateTemperature(double temperature_old, int16_t status_reading);
 static void WriteToRegister(uint16_t register_address, uint16_t data_packet);
-static int16_t ReadFromRegister(uint16_t register_address);
+static int32_t ReadFromRegister(uint16_t register_address);
 
 /*
  * Initializes connections and constants needed to read object temperature
  * measurements continuously from the temperature sensor.
  */
 void ConnectWithTemperatureSensor() {
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C2);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C2);
     GPIOPinConfigure(GPIO_PL1_I2C2SCL);
     GPIOPinConfigure(GPIO_PL0_I2C2SDA);
     GPIOPinTypeI2CSCL(GPIO_PORTL_BASE, GPIO_PIN_1);
@@ -41,6 +45,7 @@ void ConnectWithTemperatureSensor() {
     I2CMasterInitExpClk(I2C2_BASE, SysCtlClockGet(), false);
     WriteToRegister(0x3001, 0x06); // starts sensor in continuous mode
     InitialiseCalibrationConstants();
+    WriteToRegister(0x3FFF, 0x100); // reset bits in REG_STATUS
 }
 
 /*
@@ -67,20 +72,16 @@ static void InitialiseCalibrationConstants() {
  * Returns the motor's object temperature based on current sensor readings.
  */
 double GetTemperature() {
-    int16_t i, status_reading, new_data = 0;
-    double temperature_C = 25; // Recommended initial value in page 22 of MLX90632 datasheet
+    int16_t status_reading = 0, new_data = 0;
+    status_reading = ReadFromRegister(0x3FFF);
+    new_data = (status_reading & 1);
 
-    WriteToRegister(0x3FFF, 0b100000000); // reset bits in REG_STATUS
-    while (new_data == 0) { // Wait until sensor gets new reading
-        status_reading = ReadFromRegister(0x3FFF);
-        new_data = (status_reading & 0b1);
+    if (new_data != 0) { // Check if sensor has new reading
+        temperature_C = CalculateTemperature(temperature_C, status_reading) / 275619218;
+        WriteToRegister(0x3FFF, 0x100); // reset bits in REG_STATUS
     }
 
-    for (i = 0; i < 3; i++) { // Suggested number of iterations to get right temperature value
-        temperature_C = CalculateTemperature(temperature_C, status_reading);
-    }
-
-    return temperature_C;
+    return 0;//temperature_C;
 }
 
 /*
@@ -144,9 +145,9 @@ void WriteToRegister(uint16_t register_address, uint16_t data_packet) {
  *  temperature sensor by following the process described in page 16 of the
  *  MLX90632 datasheet.
  */
-static int16_t ReadFromRegister(uint16_t register_address) {
+static int32_t ReadFromRegister(uint16_t register_address) {
     int i, j, k = 0;
-    int16_t fetched_constant = 0x00;
+    int32_t fetched_constant = 0;
     uint32_t send_receive[4] = {I2C_MASTER_CMD_BURST_SEND_START, I2C_MASTER_CMD_BURST_SEND_FINISH, I2C_MASTER_CMD_BURST_RECEIVE_START, I2C_MASTER_CMD_BURST_RECEIVE_FINISH};
     bool write_read[2] = {false, true};
 
@@ -163,10 +164,11 @@ static int16_t ReadFromRegister(uint16_t register_address) {
                     I2CMasterDataPut(I2C2_BASE, register_address & 0xff);
                     break;
                 case 10:
-                    fetched_constant = (int16_t)(I2CMasterDataGet(I2C2_BASE) << 8);
+                    fetched_constant = ((int32_t)I2CMasterDataGet(I2C2_BASE));
+                    fetched_constant = fetched_constant << 8;
                     break;
                 case 11:
-                    fetched_constant |= ((int16_t)I2CMasterDataGet(I2C2_BASE));
+                    fetched_constant |= ((int32_t)I2CMasterDataGet(I2C2_BASE));
                     break;
             }
 
