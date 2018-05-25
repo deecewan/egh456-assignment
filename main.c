@@ -17,7 +17,7 @@
 #include "motor/measurement.h"
 #include "ui/main.h"
 
-#define SECONDS_SINCE_EPOCH (1526136342 + (10 * 60 * 60)) // add 10 hours to account for the TZ difference
+#define SECONDS_SINCE_EPOCH (1526892415 + (10 * 60 * 60))
 
 int initialise_hardware() {
     // call all hardware setup functions
@@ -43,6 +43,7 @@ Int main()
     ui32SysClock = MAP_SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ |
                                            SYSCTL_OSC_MAIN | SYSCTL_USE_PLL |
                                            SYSCTL_CFG_VCO_480), 120000000);
+
     // Configure the device pins
     PinoutSet();
 

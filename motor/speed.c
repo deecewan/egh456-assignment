@@ -19,8 +19,12 @@
 #define SAMPLING_FREQUENCY 500000 // Fixed PWM frequency at which motor performs best
 #define MAX_DUTY 0.95
 #define MAX_INCREMENT 0.00001
-#define CHECK_INTERVAL 500
-#define MAX_ERROR_SUM 10000
+#define MIN_INCREMENT -1*MAX_INCREMENT
+#define CHECK_INTERVAL 250
+#define MAX_ERROR_SUM 10
+#define PI_INTERVAL 50
+#define KP MAX_INCREMENT/100
+#define KI KP/100
 
 static const uint8_t HALL_SENSOR_STATES[NUM_STATES] = {1, 101, 100, 110, 10, 11};
 static const uint16_t TIMER_CYCLES = T_CPU_CLOCK_SPEED / SAMPLING_FREQUENCY;
@@ -31,10 +35,8 @@ static const uint16_t TIMER_CYCLES = T_CPU_CLOCK_SPEED / SAMPLING_FREQUENCY;
 static uint8_t current_state, checkpoint_state;
 static uint16_t match_point;
 static int milliseconds = 0;
-static double current_speed = 0, desired_speed = 0, duty_cycle = 0, error_sum = 0;
-static double Kp = MAX_INCREMENT/100, Ki = MAX_INCREMENT/MAX_ERROR_SUM, revolutions = 0; // Kp and Ki be determined through trial and error
-static bool run_motor = false, faulty_motor = false;
-
+static double current_speed = 0, desired_speed = 0, duty_cycle = 0.05, error_sum = 0, revolutions = 0;
+static bool run_motor = false, faulty_motor = false, state_changed = false;
 /*
  * Function Prototypes.
  */
@@ -52,6 +54,23 @@ static void AddToCurrentRevolutions();
 static void PIControl();
 static void FeedbackControl();
 
+void PortCIntHandler () {
+    GPIOIntClear(GPIO_PORTC_BASE, GPIO_INT_PIN_6);
+    //CheckForFaultSignal();
+    state_changed = true;
+}
+
+void PortLIntHandler () {
+    GPIOIntClear(GPIO_PORTL_BASE, GPIO_INT_PIN_2 | GPIO_INT_PIN_3);
+    //CheckForFaultSignal();
+    state_changed = true;
+}
+
+void PortPIntHandler () {
+    GPIOIntClear(GPIO_PORTP_BASE, GPIO_INT_PIN_4 | GPIO_INT_PIN_5);
+    state_changed = true;
+}
+
 /*
  * Initializes connection to read from all three hall sensors and fault lines.
  *
@@ -63,10 +82,11 @@ int ConnectWithHallSensors() {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOP);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
     GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, GPIO_PIN_6);
-    GPIOPinTypeGPIOInput(GPIO_PORTL_BASE, GPIO_PIN_2);
-    GPIOPinTypeGPIOInput(GPIO_PORTL_BASE, GPIO_PIN_3);
-    GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_4);
-    GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_5);
+    GPIOPinTypeGPIOInput(GPIO_PORTL_BASE, GPIO_PIN_2 | GPIO_PIN_3);
+    GPIOPinTypeGPIOInput(GPIO_PORTP_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+    GPIOIntRegister(GPIO_PORTC_BASE, PortCIntHandler);
+    GPIOIntRegister(GPIO_PORTL_BASE, PortLIntHandler);
+    GPIOIntRegister(GPIO_PORTP_BASE, PortPIntHandler);
     current_state = GetCurrentHallState();
     checkpoint_state = current_state;
 
@@ -127,8 +147,10 @@ void StartMotor() {
     TimerEnable(TIMER0_BASE, TIMER_BOTH);
     TimerEnable(TIMER2_BASE, TIMER_BOTH);
     TimerEnable(TIMER3_BASE, TIMER_BOTH);
+    GPIOIntEnable(GPIO_PORTC_BASE, GPIO_INT_PIN_6);
+    GPIOIntEnable(GPIO_PORTL_BASE, GPIO_INT_PIN_2 | GPIO_INT_PIN_3);
+    GPIOIntEnable(GPIO_PORTP_BASE, GPIO_INT_PIN_4 | GPIO_INT_PIN_5);
     match_point = TIMER_CYCLES-1;
-    duty_cycle = 0;
     run_motor = true;
 }
 
@@ -148,23 +170,27 @@ void RotateMotor() {
     if (!run_motor) {
         return;
     }
-    SetMotorSpeed(300);
+
     TimerSynchronize(TIMER0_BASE, (TIMER_0A_SYNC | TIMER_0B_SYNC | TIMER_2A_SYNC | TIMER_2B_SYNC | TIMER_3A_SYNC | TIMER_3B_SYNC));
     match_point = ((uint16_t)(TIMER_CYCLES - (duty_cycle * TIMER_CYCLES)));
-    FeedbackControl();
-    CheckForFaultSignal();
     current_state = GetCurrentHallState();
+    CheckForFaultSignal();
+
+    // Motor cannot have interrupts if it is not moving
+    if (1 == 1) {//(GetFilteredSpeed() == 0 || current_state != checkpoint_state) { // || state_changed
+        FeedbackControl();
+        PIControl();
+        state_changed = false;
+    }
 
     ++milliseconds;
     if (milliseconds >= CHECK_INTERVAL) {
         current_speed = (MILLISECONDS_IN_MINUTE / milliseconds) * revolutions;
         revolutions = 0;
         milliseconds = 0;
-    } else {
-        AddToCurrentRevolutions();
     }
 
-    PIControl();
+    AddToCurrentRevolutions();
 }
 
 /*
@@ -181,8 +207,8 @@ double GetMotorSpeed() {
  */
 void SetMotorSpeed(int speed) {
     // User input error handling for unsupported speed demands
-    if (speed < 0) {
-        return; // This is because the UI doesn't let me select speeds other than 0, WILL CHANGE IT TO duty_cycle = 0
+    if (speed <= 0) {
+        desired_speed = 0; // This is because the UI doesn't let me select speeds other than 0, WILL CHANGE IT TO duty_cycle = 0
     } else if(speed >= MAX_SPEED) {
         desired_speed = MAX_SPEED;
     } else {
@@ -194,12 +220,19 @@ void SetMotorSpeed(int speed) {
  * Brings the motor to a stopping state and when the speed is low enough, stops the motor itself.
  */
 void StopMotor() {
-    //SetMotorSpeed(0);
-    current_speed = 0;
     run_motor = false;
+    duty_cycle = 0.05;
+    current_speed = 0;
+    error_sum = 0;
+    revolutions = 0;
+    milliseconds = 0;
+    state_changed = false;
     TimerDisable(TIMER0_BASE, TIMER_BOTH);
     TimerDisable(TIMER2_BASE, TIMER_BOTH);
     TimerDisable(TIMER3_BASE, TIMER_BOTH);
+    GPIOIntDisable(GPIO_PORTC_BASE, GPIO_INT_PIN_6);
+    GPIOIntDisable(GPIO_PORTL_BASE, GPIO_INT_PIN_2 | GPIO_INT_PIN_3);
+    GPIOIntDisable(GPIO_PORTP_BASE, GPIO_INT_PIN_4 | GPIO_INT_PIN_5);
 }
 
 /*
@@ -261,7 +294,7 @@ static void PIControl() {
     double error = 0, duty_inc = 0;
     error = desired_speed - GetFilteredSpeed();
     error_sum += error;
-    duty_inc = (Kp*error + Ki*error_sum);
+    duty_inc = (KP*error + KI*error_sum);
 
     // Ensure error sum is a reasonable value
     if (error_sum >= MAX_ERROR_SUM) {
@@ -271,8 +304,8 @@ static void PIControl() {
     // Ensure acceleration or deceleration doesn't get out of hand
     if (duty_inc >= MAX_INCREMENT) {
         duty_inc = MAX_INCREMENT;
-    } else if (duty_inc <= -1*MAX_INCREMENT) {
-        duty_inc = -1*MAX_INCREMENT;
+    } else if (duty_inc <= MIN_INCREMENT) {
+        duty_inc = MIN_INCREMENT;
     }
 
     duty_cycle += duty_inc;

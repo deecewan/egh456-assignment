@@ -13,11 +13,16 @@
 #include "state.h"
 #include "../tabs.h"
 #include "home.h"
+#include "../calendar.h"
 
+static bool StopMotorBool = false;
 void onPress(tWidget *psWidget);
 void home_onStateUpdate();
 void updateStateIndicator();
 void home_updateRuntime();
+void updateStartStopButton();
+void StopFaultyMotor();
+bool ShouldMotorBeStopped();
 
 RectangularButton(btnToggleMotor, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                       (SCREEN_WIDTH - BUTTON_WIDTH) / 2, MARGIN_TOP + 10, BUTTON_WIDTH, BUTTON_HEIGHT,
@@ -29,7 +34,7 @@ Canvas(boxStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  CANVAS_STYLE_FILL | CANVAS_STYLE_OUTLINE, COLOR_IDLE, ClrGreen, 0, 0, 0, 0, 0);
 Canvas(textStateIndicator, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  40, 100, 75, 20,
-                 CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
+                 CANVAS_STYLE_TEXT | CANVAS_STYLE_FILL | CANVAS_STYLE_TEXT_LEFT,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, "Idle", 0, 0);
 Canvas(textRuntime, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  10, 140, 105, 20,
@@ -40,10 +45,9 @@ Canvas(textRuntimeValue, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  60, 140, 105, 20,
                  CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, runtime, 0, 0);
-
-char timestamp[30] = "";
+char timestamp[50] = "";
 Canvas(textTimestamp, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-                 60, 170, 105, 20,
+                 10, 170, 170, 20,
                  CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_LEFT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss20, timestamp, 0, 0);
 static char motorSpeed[22] = "Motor Speed: 0 rpm"; // allows up to 5 digits
@@ -53,7 +57,7 @@ Canvas(textMotorSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, motorSpeed, 0, 0);
 static char currentLimit[24] = "Current Limit: 0 mA"; // allows up to 5 digits
 Canvas(textCurrentLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
-                 160, 130, 150, 20,
+                 160, 130, 160, 20,
                  CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, currentLimit, 0, 0);
 static char tempLimit[16] = "Temp Limit: 0 C"; // allows up to 3 digits
@@ -62,18 +66,17 @@ Canvas(textTempLimit, 0, 0, 0, &g_sKentec320x240x16_SSD2119,
                  CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_RIGHT | CANVAS_STYLE_FILL,
                  ClrBlack, ClrGreen, ClrWhite, g_psFontCmss16, tempLimit, 0, 0);
 
-// this function deals with updating the calendar time to be displayed
-// currently, we are displaying nothing, because `localtime` is crashing
-// when called from the context of a Hwi/Swi/Task/etc.
-// if I manage to fix this, we can show this, too. We are currently just showing
-// runtime.
 void updateDateDisplay() {
-    time_t t;
-    struct tm *ltm;
-    t = time(NULL);
-    ltm = localtime(&t);
-    usprintf(timestamp, "%s", asctime(ltm));
 
+    GetCalendarTime(timestamp);
+//    time_t t;
+//    struct tm ltm;
+//    t = time(NULL);
+//    t = Seconds_get();
+//    ulocaltime(t, &ltm);
+//    usprintf(timestamp, "%d/%d/%d %d:%d:%d", 1900 + ltm.tm_year, 1 + ltm.tm_mon, ltm.tm_mday, ltm.tm_hour, ltm.tm_min, ltm.tm_sec);
+//
+//    CanvasTextSet(&textTimestamp, timestamp);
     WidgetPaint((tWidget *)&textTimestamp);
 }
 
@@ -86,8 +89,6 @@ void paint_home(tWidget *psWidget, tContext *psContext) {
     WidgetAdd(psWidget, (tWidget *)&textRuntime);
     WidgetAdd(psWidget, (tWidget *)&textRuntimeValue);
 
-    WidgetAdd(psWidget, (tWidget *)&textTimestamp);
-
     usprintf(motorSpeed, "Motor Speed: %d rpm", get_motor_speed());
     usprintf(currentLimit, "Current Limit: %d mA", get_current_limit());
     usprintf(tempLimit, "Temp Limit: %d C", get_temp_limit());
@@ -96,8 +97,30 @@ void paint_home(tWidget *psWidget, tContext *psContext) {
     WidgetAdd(psWidget, (tWidget *)&textCurrentLimit);
     WidgetAdd(psWidget, (tWidget *)&textTempLimit);
 
+    WidgetAdd(psWidget, (tWidget *)&textTimestamp);
+
+
     updateStateIndicator();
     home_updateRuntime();
+}
+
+void StopFaultyMotor() {
+    uint32_t fill, press_fill;
+    char *text;
+    fill = ClrGreenYellow;
+    press_fill = ClrGreen;
+    text = "Start";
+    set_motor_speed(0);
+    StopMotorBool = true;
+
+    PushButtonFillColorSet(&btnToggleMotor, fill);
+    PushButtonFillColorPressedSet(&btnToggleMotor, press_fill);
+    PushButtonTextSet(&btnToggleMotor, text);
+    WidgetPaint((tWidget *)&btnToggleMotor);
+}
+
+bool ShouldMotorBeStopped() {
+    return StopMotorBool;
 }
 
 void updateStartStopButton() {
@@ -111,14 +134,16 @@ void updateStartStopButton() {
         fill = ClrRed;
         press_fill = ClrLightSalmon;
         text = "Stop";
-        StartMotor();
+        StopMotorBool = false;
         SetMotorSpeed((int)get_motor_speed());
+        StartMotor();
         break;
       case OFF:
         fill = ClrGreenYellow;
         press_fill = ClrGreen;
         text = "Start";
-        StopMotor();
+        set_motor_speed(0);
+        StopMotorBool = true;
         break;
     }
 
@@ -167,7 +192,7 @@ void home_onStateChange() {
 }
 
 void home_updateRuntime() {
-//    updateDateDisplay(); // if/when this works, it'll display the date on the screen!
+    updateDateDisplay();
     uint32_t hours, minutes, seconds = get_run_time();
     minutes = seconds / 60;
     hours = minutes / 60;
@@ -180,5 +205,6 @@ void home_updateRuntime() {
     } else {
         usprintf(runtime, "%us", seconds);
     }
+//    CanvasTextSet(&textRuntimeValue, runtime);
     WidgetPaint((tWidget *)&textRuntimeValue);
 }

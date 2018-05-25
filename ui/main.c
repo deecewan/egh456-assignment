@@ -19,6 +19,7 @@
 #include "tabs.h"
 #include "tabs/home.h"
 #include "main.h"
+#include "calendar.h"
 
 #define TASKSTACKSIZE   512
 
@@ -54,14 +55,11 @@ Void idleTask() {
 }
 
 Void checkWithinLimits(double current, double temp) {
-    if (current > get_current_limit()) {
-        // stop
-        set_motor_power(OFF);
-        StopMotor();
-    } else if (temp > get_temp_limit()) {
-        // stop
-        set_motor_power(OFF);
-        StopMotor();
+    if (get_motor_power() == ON) {
+        if (current > get_current_limit() || temp > get_temp_limit() || IsMotorFaulty()) {
+            set_motor_power(OFF);
+            StopFaultyMotor();
+        }
     }
 }
 
@@ -89,35 +87,32 @@ Void clockRuntimeTracker(UArg arg) {
     RotateMotor();
     TakeMeasurements();
 
-    // we need to be able to GET in here if the motor has had a fault
-    // and turned itself off. If this happens, we need to call
-//    set_motor_power(OFF);
-//    set_motor_state(IDLE);
-    // which will allow the UI to reflect that the motor has stopped
-
-    if (!ReadingsReady()) {
-        return;
-    }
-
     double latest_average_speed = GetFilteredSpeed();
     double latest_average_current = GetFilteredCurrentValue();
-    double latest_average_temp = 0;//GetFilteredTemperature();
+    double latest_average_temp = GetFilteredTemperature();
     checkWithinLimits(latest_average_current, latest_average_temp);
     updateMotorState(latest_average_speed);
-    updateStartStopButton();
 
-
-    if (counter == 1000) {
+    if (counter >= 1000) {
+        MeasureTemperature();
+        IncrementCalendarSecond();
         increment_run_time();
         appendToMotorSpeed(latest_average_speed);
         appendToCurrent(latest_average_current * 1000);
         appendToTemp(latest_average_temp);
         update_on_clock_cycle();
         counter = 0;
+    } else if (counter == 500) {
+        MeasureTemperature();
+    }
+
+    if (latest_average_speed < 100 && ShouldMotorBeStopped()) {
+        StopMotor();
     }
 }
 
 void ui_setup(uint32_t sysclock, int hardware_status) {
+  InitialiseCalendarValues(0, 41, 18, 21, 5, 2018, 1, 200);
   usrand(sysclock);
   // Init the display driver
   Kentec320x240x16_SSD2119Init(sysclock);
@@ -137,6 +132,7 @@ void ui_setup(uint32_t sysclock, int hardware_status) {
       return;
   }
 
+  //SetMotorSpeed(500);
   // set up clock to track run time
   Clock_Params clkParams;
   Clock_Params_init(&clkParams);

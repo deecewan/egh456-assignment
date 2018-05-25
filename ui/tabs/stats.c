@@ -110,20 +110,23 @@ void draw_chart(tContext *context, uint32_t color, uint32_t *list, uint32_t larg
 
 void draw_charts(tWidget *psWidget, tContext *context) {
     if (visibility & LINE_MOTOR_SPEED) {
-        draw_chart(context, ClrChartreuse, get_motor_speed_list(), get_largest_motor_speed());
-        usprintf(speedString, "Speed: %u rpm", get_largest_motor_speed());
+        uint32_t *motor_speed_list = get_motor_speed_list();
+        draw_chart(context, ClrChartreuse, motor_speed_list, get_largest_motor_speed());
+        usprintf(speedString, "Speed: %u rpm", motor_speed_list[LIST_ITEM_COUNT - 1]);
     } else {
         usprintf(speedString, "Speed");
     }
     if (visibility & LINE_CURRENT) {
-        draw_chart(context, ClrCornflowerBlue, get_current_list(), get_largest_current());
-        usprintf(currentString, "Current: %u mA", get_largest_current());
+        uint32_t *current_list = get_current_list();
+        draw_chart(context, ClrCornflowerBlue, current_list, get_largest_current());
+        usprintf(currentString, "Current: %u mA", current_list[LIST_ITEM_COUNT - 1]);
     } else {
         usprintf(currentString, "Current");
     }
     if (visibility & LINE_TEMP) {
-        draw_chart(context, ClrDeepPink, get_temp_list(), get_largest_temp());
-        usprintf(tempString, "Temp: %u C", get_largest_temp());
+        uint32_t *temp_list = get_temp_list();
+        draw_chart(context, ClrDeepPink, temp_list, get_largest_temp());
+        usprintf(tempString, "Temp: %u C", temp_list[LIST_ITEM_COUNT - 1]);
     } else {
         usprintf(tempString, "Temp");
     }

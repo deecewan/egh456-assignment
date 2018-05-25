@@ -1,7 +1,7 @@
 #include <stdint.h>
+#include "motor/speed.h"
 #include "constants.h"
 #include "state.h"
-#include "motor/speed.h"
 
 /**
  * Controls whether on not the motor is turned on
@@ -43,7 +43,6 @@ uint32_t get_motor_speed() {
 
 void set_motor_speed(uint32_t speed) {
   motor_speed = speed;
-  // update the speed inside the motor controller
   SetMotorSpeed(speed);
 }
 
@@ -51,7 +50,7 @@ void set_motor_speed(uint32_t speed) {
  * Controls the maximum current draw allowed by the motors
  * before forcing shutdown
  */
-volatile uint32_t current_limit = 0;
+volatile uint32_t current_limit = 10000;
 
 uint32_t get_current_limit() {
   return current_limit;
@@ -112,32 +111,25 @@ void append(uint32_t *list, uint32_t value) {
 }
 
 void appendToMotorSpeed(uint32_t value) {
+    if (value > listMotorSpeedLargest) {
+        listMotorSpeedLargest = value;
+    }
     append(listMotorSpeed, value);
 
-    for (uint8_t i = 1; i < LIST_ITEM_COUNT; i++) {
-        if (listMotorSpeed[i] > listMotorSpeedLargest) {
-            listMotorSpeedLargest = listMotorSpeed[i];
-        }
-    }
 }
 
 void appendToCurrent(uint32_t value) {
-    // we need to calculate a new largest every time :(
-    append(listCurrent, value);
-    for (uint8_t i = 1; i < LIST_ITEM_COUNT; i++) {
-        if (listCurrent[i] > listCurrentLargest) {
-            listCurrentLargest = listCurrent[i];
-        }
+    if (value > listCurrentLargest) {
+        listCurrentLargest = value;
     }
+    append(listCurrent, value);
 }
 
 void appendToTemp(uint32_t value) {
-    append(listTemp, value);
-    for (uint8_t i = 1; i < LIST_ITEM_COUNT; i++) {
-        if (listTemp[i] > listTempLargest) {
-            listTempLargest = listTemp[i];
-        }
+    if (value > listTempLargest) {
+        listTempLargest = value;
     }
+    append(listTemp, value);
 }
 
 uint32_t *get_motor_speed_list() {

@@ -81,7 +81,7 @@ double GetTemperature() {
         WriteToRegister(0x3FFF, 0x100); // reset bits in REG_STATUS
     }
 
-    return 0;//temperature_C;
+    return temperature_C;
 }
 
 /*

@@ -17,4 +17,6 @@ void paint_home(tWidget *psWidget, tContext *psContext);
 void home_onStateChange();
 void home_updateRuntime();
 void updateStartStopButton();
+void StopFaultyMotor();
+bool ShouldMotorBeStopped();
 #endif // UI_TABS_HOME_H
