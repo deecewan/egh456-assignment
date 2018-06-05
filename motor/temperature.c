@@ -24,7 +24,6 @@ static double temperature_C = 25; // Recommended initial value in page 22 of MLX
  * Function Prototypes
  */
 void ConnectWithTemperatureSensor();
-int* ReturnSamples();
 double GetTemperature();
 static void InitialiseCalibrationConstants();
 static double CalculateTemperature(double temperature_old, int16_t status_reading);

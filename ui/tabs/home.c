@@ -15,7 +15,7 @@
 #include "home.h"
 #include "../calendar.h"
 
-static bool StopMotorBool = false;
+static bool stop_motor = false;
 void onPress(tWidget *psWidget);
 void home_onStateUpdate();
 void updateStateIndicator();
@@ -111,7 +111,7 @@ void StopFaultyMotor() {
     press_fill = ClrGreen;
     text = "Start";
     set_motor_speed(0);
-    StopMotorBool = true;
+    stop_motor = true;
 
     PushButtonFillColorSet(&btnToggleMotor, fill);
     PushButtonFillColorPressedSet(&btnToggleMotor, press_fill);
@@ -120,7 +120,7 @@ void StopFaultyMotor() {
 }
 
 bool ShouldMotorBeStopped() {
-    return StopMotorBool;
+    return stop_motor;
 }
 
 void updateStartStopButton() {
@@ -134,16 +134,20 @@ void updateStartStopButton() {
         fill = ClrRed;
         press_fill = ClrLightSalmon;
         text = "Stop";
-        StopMotorBool = false;
+        stop_motor = false;
         SetMotorSpeed((int)get_motor_speed());
-        StartMotor();
+        // if statement below is just there in case user violates state diagram
+        // and user wants to run motor while it is stopping
+        if (get_motor_state() == IDLE || get_motor_state() == STARTING) {
+            StartMotor();
+        }
         break;
       case OFF:
         fill = ClrGreenYellow;
         press_fill = ClrGreen;
         text = "Start";
         set_motor_speed(0);
-        StopMotorBool = true;
+        stop_motor = true;
         break;
     }
 

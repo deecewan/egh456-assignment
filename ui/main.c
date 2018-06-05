@@ -73,7 +73,7 @@ Void updateMotorState(double speed) {
         }
         break;
     case OFF:
-        if (speed > 0) {
+        if (speed >= 100) {
             set_motor_state(STOPPING);
         } else {
             set_motor_state(IDLE);
@@ -88,7 +88,7 @@ Void clockRuntimeTracker(UArg arg) {
     TakeMeasurements();
 
     double latest_average_speed = GetFilteredSpeed();
-    double latest_average_current = GetFilteredCurrentValue();
+    double latest_average_current = GetFilteredCurrentValue() * 1000;
     double latest_average_temp = GetFilteredTemperature();
     checkWithinLimits(latest_average_current, latest_average_temp);
     updateMotorState(latest_average_speed);
@@ -98,7 +98,7 @@ Void clockRuntimeTracker(UArg arg) {
         IncrementCalendarSecond();
         increment_run_time();
         appendToMotorSpeed(latest_average_speed);
-        appendToCurrent(latest_average_current * 1000);
+        appendToCurrent(latest_average_current);
         appendToTemp(latest_average_temp);
         update_on_clock_cycle();
         counter = 0;
